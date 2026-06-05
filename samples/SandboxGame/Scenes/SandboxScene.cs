@@ -88,6 +88,7 @@ internal sealed class SandboxScene : Scene2D
 
         CreateCamera(playerTransform, mapInfo.WorldBounds);
         CreateTileHover(mapInfo, _mouse);
+        CreateAimReticle(_mouse);
 
         AddPickup("Pickup A", -260f, -140f);
         AddPickup("Pickup B", 220f, 180f);
@@ -318,6 +319,25 @@ internal sealed class SandboxScene : Scene2D
             MinZoom = 0.5f,
             MaxZoom = 2.5f,
             ZoomSpeed = 1.5f
+        });
+    }
+
+    private void CreateAimReticle(IMouseDevice mouse)
+    {
+        if (ActiveCamera is null)
+        {
+            throw new InvalidOperationException("Camera must exist before aim reticle is created.");
+        }
+
+        var reticle = CreateEntity("Aim Reticle");
+
+        reticle.AddComponent(new AimReticle2DRenderer(mouse, ActiveCamera)
+        {
+            Color = ColorRGBA.SindriGold,
+            Size = 28f,
+            Thickness = 3f,
+            DrawCenterDot = true,
+            RenderLayer = 40_000
         });
     }
 
@@ -590,16 +610,18 @@ internal sealed class SandboxScene : Scene2D
         _projectileCount++;
 
         _prefabSpawner.Spawn(
-            _projectilePrefab,
-            new ProjectilePrefabConfig(
-                TriggerScene: this,
-                Name: $"Projectile {_projectileCount}",
-                X: spawnPosition.X,
-                Y: spawnPosition.Y,
-                Velocity: direction * projectileSpeed,
-                TileMap: _map,
-                MapWorldPosition: GetCurrentMapWorldPosition(),
-                Damage: 1));
+        _projectilePrefab,
+        new ProjectilePrefabConfig(
+            TriggerScene: this,
+            Name: $"Projectile {_projectileCount}",
+            X: spawnPosition.X,
+            Y: spawnPosition.Y,
+            Velocity: direction * projectileSpeed,
+            TileMap: _map,
+            MapWorldPosition: GetCurrentMapWorldPosition(),
+            Damage: 1));
+
+        SpawnParticleBurst(spawnPosition, ColorRGBA.SindriGold, count: 8, strength: 0.55f);
 
         AddDebugColliderRenderersToExistingEntities();
     }
