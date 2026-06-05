@@ -13,7 +13,7 @@ public sealed class SceneContext
 
     public void ChangeScene(IScene nextScene)
     {
-        Host.ChangeScene(nextScene);
+        Host.RequestSceneChange(nextScene);
     }
 
     public void RequestExit()

@@ -6,6 +6,7 @@ public sealed class EngineHost
     private readonly EngineConfig _config;
     private readonly SceneContext _sceneContext;
     private IScene? _activeScene;
+    private IScene? _pendingScene;
     private TimeSpan _totalTime;
     private bool _configured;
     private bool _initialized;
@@ -45,17 +46,19 @@ public sealed class EngineHost
         }
 
         Configure();
-        ChangeScene(_game.CreateInitialScene());
+        SwitchSceneImmediately(_game.CreateInitialScene());
         _initialized = true;
     }
 
     public void ChangeScene(IScene nextScene)
     {
-        ArgumentNullException.ThrowIfNull(nextScene);
+        RequestSceneChange(nextScene);
+    }
 
-        _activeScene?.Exit();
-        _activeScene = nextScene;
-        _activeScene.Enter(_sceneContext);
+    internal void RequestSceneChange(IScene nextScene)
+    {
+        ArgumentNullException.ThrowIfNull(nextScene);
+        _pendingScene = nextScene;
     }
 
     public void Tick(TimeSpan delta)
@@ -66,7 +69,10 @@ public sealed class EngineHost
         }
 
         _totalTime += delta;
+
         _activeScene?.Update(new SindriTime(delta, _totalTime));
+
+        ApplyPendingSceneChange();
     }
 
     public void RequestExit()
@@ -76,8 +82,32 @@ public sealed class EngineHost
 
     public void Shutdown()
     {
+        _pendingScene = null;
+
         _activeScene?.Exit();
         _activeScene = null;
         _initialized = false;
+    }
+
+    private void ApplyPendingSceneChange()
+    {
+        if (_pendingScene is null)
+        {
+            return;
+        }
+
+        var nextScene = _pendingScene;
+        _pendingScene = null;
+
+        SwitchSceneImmediately(nextScene);
+    }
+
+    private void SwitchSceneImmediately(IScene nextScene)
+    {
+        ArgumentNullException.ThrowIfNull(nextScene);
+
+        _activeScene?.Exit();
+        _activeScene = nextScene;
+        _activeScene.Enter(_sceneContext);
     }
 }
