@@ -15,6 +15,7 @@ internal sealed class SandboxScene : Scene2D
     private const string MapSavePath = "runtime-data/maps/sandbox.tilemap.json";
     private const string InputBindingsPath = "runtime-data/input/sandbox.actions.json";
     private const string WeaponCatalogPath = "runtime-data/weapons/sandbox.weapons.json";
+    private const string LevelPath = "runtime-data/levels/sandbox.level.json";
 
     private const string ExitAction = "Exit";
     private const string RestartAction = "Restart";
@@ -94,20 +95,7 @@ private int _destroyedDummies;
         CreateTileHover(mapInfo, _mouse);
         CreateAimReticle(_mouse);
 
-        AddPickup("Pickup A", -260f, -140f);
-        AddPickup("Pickup B", 220f, 180f);
-        AddPickup("Pickup C", 620f, -320f);
-        AddPickup("Pickup D", -800f, 420f);
-
-        AddTriggerZone("Test Trigger Zone", 420f, 320f);
-
-        AddTargetDummy("Dummy A", 360f, -180f);
-        AddTargetDummy("Dummy B", 720f, 240f);
-        AddTargetDummy("Dummy C", -620f, -360f);
-
-        AddEnemy("Enemy A", -420f, 260f);
-        AddEnemy("Enemy B", 520f, -420f);
-        AddEnemy("Enemy C", 900f, 380f);
+        LoadSandboxLevel();
 
         CreateDebugOverlay();
         CreatePauseOverlay();
@@ -579,6 +567,31 @@ private int _destroyedDummies;
                 }));
 
         _totalEnemies++;
+    }
+
+    private void LoadSandboxLevel()
+    {
+        var level = SandboxLevel2DLoader.LoadOrCreateDefault(LevelPath);
+
+        foreach (var pickup in level.Pickups)
+        {
+            AddPickup(pickup.Name, pickup.X, pickup.Y);
+        }
+
+        foreach (var triggerZone in level.TriggerZones)
+        {
+            AddTriggerZone(triggerZone.Name, triggerZone.X, triggerZone.Y);
+        }
+
+        foreach (var dummy in level.TargetDummies)
+        {
+            AddTargetDummy(dummy.Name, dummy.X, dummy.Y);
+        }
+
+        foreach (var enemy in level.Enemies)
+        {
+            AddEnemy(enemy.Name, enemy.X, enemy.Y);
+        }
     }
 
     private void TryCompleteLevel()
