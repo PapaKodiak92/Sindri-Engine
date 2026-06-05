@@ -85,6 +85,9 @@ internal sealed class WindowsKeyboardInput : IInputDevice
             Key.K => 0x4B,
             Key.L => 0x4C,
 
+            Key.O => 0x4F,
+            Key.P => 0x50,
+
             Key.Q => 0x51,
             Key.E => 0x45,
             Key.R => 0x52,

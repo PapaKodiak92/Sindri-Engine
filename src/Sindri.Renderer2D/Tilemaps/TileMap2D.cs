@@ -60,6 +60,24 @@ public sealed class TileMap2D
         Array.Fill(_tiles, tile);
     }
 
+    public void CopyFrom(TileMap2D other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        if (other.Width != Width || other.Height != Height || other.TileSize != TileSize)
+        {
+            throw new InvalidOperationException("Cannot copy tilemap data from a map with different dimensions or tile size.");
+        }
+
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                SetTile(x, y, other.GetTile(x, y));
+            }
+        }
+    }
+
     public bool ContainsTile(int x, int y)
     {
         return x >= 0 && x < Width && y >= 0 && y < Height;

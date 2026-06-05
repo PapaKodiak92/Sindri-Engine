@@ -35,6 +35,7 @@ internal sealed class SandboxScene : Scene2D
 {
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
+    private const string MapSavePath = "runtime-data/maps/sandbox.tilemap.json";
     private Transform2D? _playerTransform;
     private Transform2D? _cameraTransform;
     private TextRenderer2D? _debugText;
@@ -141,7 +142,7 @@ internal sealed class SandboxScene : Scene2D
         });
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Left click teleports. Right click toggles solid tiles. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid.");
     }
 
@@ -152,6 +153,26 @@ internal sealed class SandboxScene : Scene2D
             Context?.RequestExit();
         }
         
+        if (_keyboard?.WasKeyPressed(Key.P) == true && _map is not null)
+        {
+            TileMapJsonSerializer.Save(_map, MapSavePath);
+            Console.WriteLine($"Saved tilemap to {MapSavePath}");
+        }
+
+        if (_keyboard?.WasKeyPressed(Key.O) == true && _map is not null)
+        {
+            try
+            {
+                var loadedMap = TileMapJsonSerializer.Load(MapSavePath);
+                _map.CopyFrom(loadedMap);
+                Console.WriteLine($"Loaded tilemap from {MapSavePath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load tilemap: {ex.Message}");
+            }
+        }
+
         if (_debugText is not null && _playerTransform is not null && _cameraTransform is not null)
         {
             var tileText = " | Tile none";
