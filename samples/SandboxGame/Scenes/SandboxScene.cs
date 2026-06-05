@@ -504,7 +504,7 @@ private int _destroyedDummies;
             $"{hpText}   |   {weaponText}   |   {pickupText}   |   {targetText}   |   {zoneText}";
     }
 
-    private void AddPickup(string name, float x, float y)
+    private void AddPickup(string name, float x, float y, int healAmount = 0)
     {
         if (_prefabSpawner is null)
         {
@@ -522,6 +522,32 @@ private int _destroyedDummies;
                 {
                     _collectedPickups++;
                     Console.WriteLine($"Collected {name}. {_collectedPickups}/{_totalPickups}");
+
+                    if (healAmount <= 0 || _playerHealth is null || _playerTransform is null)
+                    {
+                        return;
+                    }
+
+                    var actualHeal = _playerHealth.Heal(healAmount);
+
+                    if (actualHeal <= 0)
+                    {
+                        Console.WriteLine($"{name} had heal value {healAmount}, but player could not be healed.");
+                        return;
+                    }
+
+                    Console.WriteLine($"{name} healed player for {actualHeal}. HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}");
+
+                    SpawnFloatingText(
+                        $"+{actualHeal}",
+                        _playerTransform.Position + new Vector2F(8f, -34f),
+                        ColorRGBA.SindriGreen);
+
+                    SpawnParticleBurst(
+                        _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
+                        ColorRGBA.SindriGreen,
+                        count: 10,
+                        strength: 0.7f);
                 }));
 
         _totalPickups++;
@@ -622,7 +648,7 @@ private int _destroyedDummies;
     {
         foreach (var pickup in level.Pickups)
         {
-            AddPickup(pickup.Name, pickup.X, pickup.Y);
+            AddPickup(pickup.Name, pickup.X, pickup.Y, pickup.HealAmount);
         }
 
         foreach (var triggerZone in level.TriggerZones)
@@ -1068,6 +1094,7 @@ private int _destroyedDummies;
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
 }
+
 
 
 

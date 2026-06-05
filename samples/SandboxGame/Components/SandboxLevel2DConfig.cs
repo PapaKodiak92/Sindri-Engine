@@ -73,6 +73,25 @@ internal static class SandboxLevel2DLoader
             changed = true;
         }
 
+        var allPickupsHaveNoHeal = level.Pickups.Count > 0 &&
+        level.Pickups.All(pickup => pickup.HealAmount <= 0);
+
+        if (allPickupsHaveNoHeal)
+        {
+            foreach (var pickup in level.Pickups)
+            {
+                pickup.HealAmount = pickup.Name switch
+                {
+                    "Pickup B" => 2,
+                    "Pickup C" => 3,
+                    "Pickup D" => 1,
+                    _ => 0
+                };
+            }
+
+            changed = true;
+        }
+
         foreach (var dummy in level.TargetDummies)
         {
             if (dummy.MaxHealth <= 0)
@@ -127,10 +146,10 @@ internal static class SandboxLevel2DLoader
 
             Pickups =
             {
-                new() { Name = "Pickup A", X = -260f, Y = -140f },
-                new() { Name = "Pickup B", X = 220f, Y = 180f },
-                new() { Name = "Pickup C", X = 620f, Y = -320f },
-                new() { Name = "Pickup D", X = -800f, Y = 420f }
+                new() { Name = "Pickup A", X = -260f, Y = -140f, HealAmount = 0 },
+                new() { Name = "Pickup B", X = 220f, Y = 180f, HealAmount = 2 },
+                new() { Name = "Pickup C", X = 620f, Y = -320f, HealAmount = 3 },
+                new() { Name = "Pickup D", X = -800f, Y = 420f, HealAmount = 1 }
             },
 
             TriggerZones =
@@ -147,38 +166,9 @@ internal static class SandboxLevel2DLoader
 
             Enemies =
             {
-                new()
-                {
-                    Name = "Enemy A",
-                    X = -420f,
-                    Y = 260f,
-                    MaxHealth = 4,
-                    MoveSpeed = 120f,
-                    ContactDamage = 1,
-                    ContactCooldownSeconds = 0.75f
-                },
-
-                new()
-                {
-                    Name = "Enemy B",
-                    X = 520f,
-                    Y = -420f,
-                    MaxHealth = 4,
-                    MoveSpeed = 120f,
-                    ContactDamage = 1,
-                    ContactCooldownSeconds = 0.75f
-                },
-
-                new()
-                {
-                    Name = "Enemy C",
-                    X = 900f,
-                    Y = 380f,
-                    MaxHealth = 4,
-                    MoveSpeed = 120f,
-                    ContactDamage = 1,
-                    ContactCooldownSeconds = 0.75f
-                }
+                new() { Name = "Enemy A", X = -420f, Y = 260f, MaxHealth = 4, MoveSpeed = 120f, ContactDamage = 1, ContactCooldownSeconds = 0.75f },
+                new() { Name = "Enemy B", X = 520f, Y = -420f, MaxHealth = 4, MoveSpeed = 120f, ContactDamage = 1, ContactCooldownSeconds = 0.75f },
+                new() { Name = "Enemy C", X = 900f, Y = 380f, MaxHealth = 4, MoveSpeed = 120f, ContactDamage = 1, ContactCooldownSeconds = 0.75f }
             }
         };
     }
@@ -190,7 +180,7 @@ internal sealed class SandboxLevel2DConfig
 
     public SandboxSpawn2D? PlayerSpawn { get; set; }
 
-    public List<SandboxSpawn2D> Pickups { get; set; } = new();
+    public List<SandboxPickupSpawn2D> Pickups { get; set; } = new();
 
     public List<SandboxSpawn2D> TriggerZones { get; set; } = new();
 
@@ -206,6 +196,11 @@ internal class SandboxSpawn2D
     public float X { get; set; }
 
     public float Y { get; set; }
+}
+
+internal sealed class SandboxPickupSpawn2D : SandboxSpawn2D
+{
+    public int HealAmount { get; set; }
 }
 
 internal sealed class SandboxActorSpawn2D : SandboxSpawn2D

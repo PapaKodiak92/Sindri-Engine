@@ -24,7 +24,11 @@ public sealed class Health2DComponent : Component
 
     public bool IsDead => CurrentHealth <= 0;
 
+    public bool IsFullHealth => CurrentHealth >= MaxHealth;
+
     public event Action<Health2DComponent, int>? Damaged;
+
+    public event Action<Health2DComponent, int>? Healed;
 
     public event Action<Health2DComponent>? Died;
 
@@ -35,8 +39,15 @@ public sealed class Health2DComponent : Component
             return;
         }
 
-        CurrentHealth = Math.Max(0, CurrentHealth - amount);
-        Damaged?.Invoke(this, amount);
+        var previousHealth = CurrentHealth;
+        CurrentHealth = System.Math.Max(0, CurrentHealth - amount);
+
+        var actualDamage = previousHealth - CurrentHealth;
+
+        if (actualDamage > 0)
+        {
+            Damaged?.Invoke(this, actualDamage);
+        }
 
         if (CurrentHealth <= 0)
         {
@@ -47,6 +58,26 @@ public sealed class Health2DComponent : Component
                 Entity.Destroy();
             }
         }
+    }
+
+    public int Heal(int amount)
+    {
+        if (Entity is null || Entity.IsDestroyed || amount <= 0 || IsDead)
+        {
+            return 0;
+        }
+
+        var previousHealth = CurrentHealth;
+        CurrentHealth = System.Math.Min(MaxHealth, CurrentHealth + amount);
+
+        var actualHeal = CurrentHealth - previousHealth;
+
+        if (actualHeal > 0)
+        {
+            Healed?.Invoke(this, actualHeal);
+        }
+
+        return actualHeal;
     }
 
     public override void Update(SindriTime time)
