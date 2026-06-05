@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Sindri.Core\Sindri.Core.csproj" />
     <ProjectReference Include="..\..\src\Sindri.Platform.Windows\Sindri.Platform.Windows.csproj" />
+    <ProjectReference Include="..\..\src\Sindri.Graphics\Sindri.Graphics.csproj" />
   </ItemGroup>
 
 </Project>

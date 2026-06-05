@@ -1,4 +1,5 @@
 ﻿using Sindri.Core;
+using Sindri.Graphics;
 using Sindri.Platform.Windows;
 
 return WindowsGameRunner.Run(new SandboxGame());
@@ -20,7 +21,7 @@ internal sealed class SandboxGame : SindriGame
     }
 }
 
-internal sealed class SandboxScene : IScene
+internal sealed class SandboxScene : IScene, IRenderableScene
 {
     public void Enter(SceneContext context)
     {
@@ -29,8 +30,11 @@ internal sealed class SandboxScene : IScene
 
     public void Update(SindriTime time)
     {
-        // First native window milestone.
-        // Rendering/input come next.
+    }
+
+    public void Render(IGraphicsDevice graphics)
+    {
+        graphics.Clear(ColorRGBA.SindriBlue);
     }
 
     public void Exit()

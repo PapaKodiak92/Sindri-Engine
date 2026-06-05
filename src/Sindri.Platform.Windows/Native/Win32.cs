@@ -76,6 +76,15 @@ internal static partial class Win32
         public POINT Pt;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern nint GetModuleHandleW(string? moduleName);
 
@@ -123,4 +132,22 @@ internal static partial class Win32
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern nint LoadCursorW(nint instance, nint cursorName);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint GetDC(nint hwnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int ReleaseDC(nint hwnd, nint hdc);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetClientRect(nint hwnd, out RECT rect);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern nint CreateSolidBrush(uint colorRef);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern bool DeleteObject(nint objectHandle);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int FillRect(nint hdc, ref RECT rect, nint brush);
 }

@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Runtime.Versioning;
 using Sindri.Core;
+using Sindri.Graphics;
+using Sindri.Platform.Windows.Graphics;
 using Sindri.Platform.Windows.Native;
 
 namespace Sindri.Platform.Windows;
@@ -22,6 +24,8 @@ public static class WindowsGameRunner
             width: config.TargetWidth,
             height: config.TargetHeight);
 
+        var graphics = new WindowsGdiGraphicsDevice(window.Handle);
+
         window.Show();
 
         var stopwatch = Stopwatch.StartNew();
@@ -34,6 +38,11 @@ public static class WindowsGameRunner
             previous = current;
 
             engine.Tick(delta);
+
+            if (engine.ActiveScene is IRenderableScene renderableScene)
+            {
+                renderableScene.Render(graphics);
+            }
 
             Thread.Sleep(1);
         }

@@ -18,6 +18,8 @@ internal sealed class NativeWindow : IDisposable
         _hwnd = hwnd;
     }
 
+    public nint Handle => _hwnd;
+
     public static NativeWindow Create(string title, int width, int height)
     {
         RegisterWindowClass();

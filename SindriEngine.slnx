@@ -4,6 +4,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Sindri.Core/Sindri.Core.csproj" />
+    <Project Path="src/Sindri.Graphics/Sindri.Graphics.csproj" />
     <Project Path="src/Sindri.Platform.Windows/Sindri.Platform.Windows.csproj" />
   </Folder>
 </Solution>
