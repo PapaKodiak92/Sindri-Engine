@@ -35,34 +35,48 @@ internal sealed class SandboxScene : Scene2D
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
 
-    private IInputDevice? _input;
+    private IInputDevice? _keyboard;
+    private IMouseDevice? _mouse;
+    private Transform2D? _playerTransform;
 
     protected override void OnEnter(SceneContext context)
     {
-        _input = context.Services.GetRequiredService<IInputDevice>();
+        _keyboard = context.Services.GetRequiredService<IInputDevice>();
+        _mouse = context.Services.GetRequiredService<IMouseDevice>();
+
         BackgroundColor = ColorRGBA.SindriBlue;
 
         var player = CreateEntity("Player");
 
-        player.AddComponent(new Transform2D
+        _playerTransform = player.AddComponent(new Transform2D
         {
             Position = new Vector2F(
                 1280f / 2f - PlayerSize / 2f,
                 720f / 2f - PlayerSize / 2f)
         });
 
-        player.AddComponent(new KeyboardMove2DComponent(_input, PlayerSpeed));
+        player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
         player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold));
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move. Left click teleports. ESC exits.");
     }
 
     protected override void OnUpdate(SindriTime time)
     {
-        if (_input?.WasKeyPressed(Key.Escape) == true)
+        if (_keyboard?.WasKeyPressed(Key.Escape) == true)
         {
             Context?.RequestExit();
+            return;
+        }
+
+        if (_mouse?.WasButtonPressed(MouseButton.Left) == true && _playerTransform is not null)
+        {
+            var position = _mouse.Position;
+
+            _playerTransform.Position = new Vector2F(
+                position.X - PlayerSize / 2f,
+                position.Y - PlayerSize / 2f);
         }
     }
 

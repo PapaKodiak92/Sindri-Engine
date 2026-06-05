@@ -18,11 +18,10 @@ public static class WindowsGameRunner
 
         var engine = new EngineHost(game);
 
-        var input = new WindowsKeyboardInput();
-        engine.Services.Register<IInputDevice>(input);
+        var keyboard = new WindowsKeyboardInput();
+        engine.Services.Register<IInputDevice>(keyboard);
 
-        engine.Initialize();
-
+        engine.Configure();
         var config = engine.Config;
 
         using var window = NativeWindow.Create(
@@ -31,6 +30,11 @@ public static class WindowsGameRunner
             height: config.TargetHeight);
 
         var graphics = new WindowsGdiGraphicsDevice(window.Handle);
+
+        var mouse = new WindowsMouseInput(window.Handle);
+        engine.Services.Register<IMouseDevice>(mouse);
+
+        engine.Initialize();
 
         window.Show();
 
@@ -50,7 +54,8 @@ public static class WindowsGameRunner
             var delta = frameStart - previousFrameTime;
             previousFrameTime = frameStart;
 
-            input.Update();
+            keyboard.Update();
+            mouse.Update();
 
             engine.Tick(delta);
 
@@ -71,7 +76,8 @@ public static class WindowsGameRunner
                 if (config.ShowFrameRateInTitle)
                 {
                     var viewport = graphics.ViewportSize;
-                    window.SetTitle($"{config.WindowTitle} - {currentFps} FPS - {viewport.Width}x{viewport.Height}");
+                    var mousePosition = mouse.Position;
+                    window.SetTitle($"{config.WindowTitle} - {currentFps} FPS - {viewport.Width}x{viewport.Height} - Mouse {mousePosition.X},{mousePosition.Y}");
                 }
             }
 

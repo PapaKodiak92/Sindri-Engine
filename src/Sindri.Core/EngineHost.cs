@@ -7,6 +7,8 @@ public sealed class EngineHost
     private readonly SceneContext _sceneContext;
     private IScene? _activeScene;
     private TimeSpan _totalTime;
+    private bool _configured;
+    private bool _initialized;
 
     public EngineHost(SindriGame game)
     {
@@ -24,10 +26,27 @@ public sealed class EngineHost
 
     public bool ExitRequested { get; private set; }
 
+    public void Configure()
+    {
+        if (_configured)
+        {
+            return;
+        }
+
+        _game.Configure(_config);
+        _configured = true;
+    }
+
     public void Initialize()
     {
-        _game.Configure(_config);
+        if (_initialized)
+        {
+            return;
+        }
+
+        Configure();
         ChangeScene(_game.CreateInitialScene());
+        _initialized = true;
     }
 
     public void ChangeScene(IScene nextScene)
@@ -59,5 +78,6 @@ public sealed class EngineHost
     {
         _activeScene?.Exit();
         _activeScene = null;
+        _initialized = false;
     }
 }

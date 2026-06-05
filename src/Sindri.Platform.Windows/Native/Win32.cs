@@ -157,6 +157,12 @@ internal static partial class Win32
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool SetWindowTextW(nint hwnd, string text);
 
+    [DllImport("user32.dll")]
+    public static extern bool GetCursorPos(out POINT point);
+
+    [DllImport("user32.dll")]
+    public static extern bool ScreenToClient(nint hwnd, ref POINT point);
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool AdjustWindowRectEx(
         ref RECT rect,
