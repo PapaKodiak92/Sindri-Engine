@@ -25,7 +25,7 @@ public sealed class Trigger2DComponent : Component
 
     public override void Update(SindriTime time)
     {
-        if (Entity is null || !Entity.IsActive || string.IsNullOrWhiteSpace(TargetTag))
+        if (Entity is null || !Entity.IsActive || Entity.IsDestroyed || string.IsNullOrWhiteSpace(TargetTag))
         {
             return;
         }
@@ -35,7 +35,12 @@ public sealed class Trigger2DComponent : Component
 
         foreach (var target in _scene.FindEntitiesByTag(TargetTag))
         {
-            if (target == Entity || !target.IsActive)
+            if (Entity is null || Entity.IsDestroyed)
+            {
+                break;
+            }
+
+            if (target == Entity || target.IsDestroyed || !target.IsActive)
             {
                 continue;
             }
@@ -64,6 +69,11 @@ public sealed class Trigger2DComponent : Component
             }
         }
 
+        if (Entity is null || Entity.IsDestroyed)
+        {
+            return;
+        }
+
         var exitedEntities = new List<Entity>();
 
         foreach (var entity in _insideEntities)
@@ -79,5 +89,10 @@ public sealed class Trigger2DComponent : Component
             _insideEntities.Remove(entity);
             Exited?.Invoke(entity);
         }
+    }
+
+    protected override void OnDestroyed()
+    {
+        _insideEntities.Clear();
     }
 }
