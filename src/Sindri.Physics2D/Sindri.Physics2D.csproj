@@ -2,10 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sindri.Core\Sindri.Core.csproj" />
-    <ProjectReference Include="..\Sindri.Input\Sindri.Input.csproj" />
     <ProjectReference Include="..\Sindri.Graphics\Sindri.Graphics.csproj" />
-    <ProjectReference Include="..\Sindri.Renderer2D\Sindri.Renderer2D.csproj" />
-    <ProjectReference Include="..\Sindri.Physics2D\Sindri.Physics2D.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

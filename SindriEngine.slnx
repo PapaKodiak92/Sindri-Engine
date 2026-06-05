@@ -7,6 +7,7 @@
     <Project Path="src/Sindri.Core/Sindri.Core.csproj" />
     <Project Path="src/Sindri.Graphics/Sindri.Graphics.csproj" />
     <Project Path="src/Sindri.Input/Sindri.Input.csproj" />
+    <Project Path="src/Sindri.Physics2D/Sindri.Physics2D.csproj" />
     <Project Path="src/Sindri.Platform.Windows/Sindri.Platform.Windows.csproj" />
     <Project Path="src/Sindri.Renderer2D/Sindri.Renderer2D.csproj" />
   </Folder>

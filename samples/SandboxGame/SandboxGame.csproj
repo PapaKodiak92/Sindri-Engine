@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\Sindri.Input\Sindri.Input.csproj" />
     <ProjectReference Include="..\..\src\Sindri.Renderer2D\Sindri.Renderer2D.csproj" />
     <ProjectReference Include="..\..\src\Sindri.Behaviors2D\Sindri.Behaviors2D.csproj" />
+    <ProjectReference Include="..\..\src\Sindri.Physics2D\Sindri.Physics2D.csproj" />
   </ItemGroup>
 
 </Project>

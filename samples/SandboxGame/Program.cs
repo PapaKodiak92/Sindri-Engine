@@ -8,6 +8,7 @@ using Sindri.Platform.Windows;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Scenes;
 using Sindri.Renderer2D.Tilemaps;
+using Sindri.Physics2D.Components;
 
 return WindowsGameRunner.Run(new SandboxGame());
 
@@ -77,9 +78,13 @@ internal sealed class SandboxScene : Scene2D
 
         player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
 
-        player.AddComponent(new TileMapCollision2DComponent(mapInfo.Map, PlayerSize, PlayerSize)
+        player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
+
+        player.AddComponent(new TileMapCollision2DComponent(mapInfo.Map)
         {
-            MapWorldPosition = mapInfo.WorldPosition
+            MapWorldPosition = mapInfo.WorldPosition,
+            UseAxisSeparation = true,
+            MaxAxisResolveDistance = PlayerSize * 2f
         });
 
         player.AddComponent(new RectangleRenderer2D(PlayerSize, 12f, new ColorRGBA(8, 10, 14))
