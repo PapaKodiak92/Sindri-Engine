@@ -59,6 +59,8 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
 
     public int ShotsFired { get; private set; }
 
+    public Weapon2DDefinition CurrentWeaponDefinition => CurrentWeapon;
+
     public string CurrentWeaponName => CurrentWeapon.Name;
 
     private Weapon2DDefinition CurrentWeapon

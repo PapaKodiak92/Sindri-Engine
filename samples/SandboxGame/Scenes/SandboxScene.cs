@@ -374,6 +374,14 @@ private int _destroyedDummies;
             ProjectileSize: 8f,
             ProjectileColor: ColorRGBA.SindriGold,
             MuzzleColor: ColorRGBA.SindriGold));
+
+        player.AddComponent(new EquippedWeaponVisual2DRenderer(_playerWeapon, _mouse, ActiveCamera)
+        {
+            OwnerWidth = PlayerSize,
+            OwnerHeight = PlayerSize,
+            HoldDistance = 34f,
+            RenderLayer = 16
+        });
     }
 
     private void CreateTileHover(TileMapInfo mapInfo, IMouseDevice mouse)
