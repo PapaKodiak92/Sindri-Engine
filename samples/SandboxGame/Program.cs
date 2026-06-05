@@ -14,6 +14,9 @@ internal sealed class SandboxGame : SindriGame
         config.WindowTitle = Name;
         config.TargetWidth = 1280;
         config.TargetHeight = 720;
+        config.LimitFrameRate = true;
+        config.TargetFramesPerSecond = 60;
+        config.ShowFrameRateInTitle = true;
     }
 
     public override IScene CreateInitialScene()

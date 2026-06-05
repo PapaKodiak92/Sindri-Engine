@@ -52,6 +52,11 @@ internal sealed class NativeWindow : IDisposable
         Win32.UpdateWindow(_hwnd);
     }
 
+    public void SetTitle(string title)
+    {
+        Win32.SetWindowTextW(_hwnd, title);
+    }
+
     public bool ProcessMessages()
     {
         while (Win32.PeekMessageW(out var message, nint.Zero, 0, 0, Win32.PM_REMOVE))

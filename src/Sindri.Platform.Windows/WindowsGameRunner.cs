@@ -35,13 +35,20 @@ public static class WindowsGameRunner
         window.Show();
 
         var stopwatch = Stopwatch.StartNew();
-        var previous = stopwatch.Elapsed;
+        var previousFrameTime = stopwatch.Elapsed;
+
+        var fpsTimer = TimeSpan.Zero;
+        var framesThisSecond = 0;
+        var currentFps = 0;
+
+        var targetFrameTime = GetTargetFrameTime(config);
 
         while (!engine.ExitRequested && window.ProcessMessages())
         {
-            var current = stopwatch.Elapsed;
-            var delta = current - previous;
-            previous = current;
+            var frameStart = stopwatch.Elapsed;
+
+            var delta = frameStart - previousFrameTime;
+            previousFrameTime = frameStart;
 
             input.Update();
 
@@ -52,10 +59,57 @@ public static class WindowsGameRunner
                 renderableScene.Render(graphics);
             }
 
-            Thread.Sleep(1);
+            framesThisSecond++;
+            fpsTimer += delta;
+
+            if (fpsTimer >= TimeSpan.FromSeconds(1))
+            {
+                currentFps = framesThisSecond;
+                framesThisSecond = 0;
+                fpsTimer -= TimeSpan.FromSeconds(1);
+
+                if (config.ShowFrameRateInTitle)
+                {
+                    window.SetTitle($"{config.WindowTitle} - {currentFps} FPS");
+                }
+            }
+
+            if (config.LimitFrameRate)
+            {
+                WaitForNextFrame(stopwatch, frameStart, targetFrameTime);
+            }
         }
 
         engine.Shutdown();
         return 0;
+    }
+
+    private static TimeSpan GetTargetFrameTime(EngineConfig config)
+    {
+        var targetFps = Math.Max(1, config.TargetFramesPerSecond);
+        return TimeSpan.FromSeconds(1.0 / targetFps);
+    }
+
+    private static void WaitForNextFrame(Stopwatch stopwatch, TimeSpan frameStart, TimeSpan targetFrameTime)
+    {
+        while (true)
+        {
+            var elapsed = stopwatch.Elapsed - frameStart;
+            var remaining = targetFrameTime - elapsed;
+
+            if (remaining <= TimeSpan.Zero)
+            {
+                break;
+            }
+
+            if (remaining.TotalMilliseconds > 2)
+            {
+                Thread.Sleep(1);
+            }
+            else
+            {
+                Thread.Yield();
+            }
+        }
     }
 }

@@ -9,4 +9,10 @@ public sealed class EngineConfig
     public int TargetHeight { get; set; } = 720;
 
     public bool IsFixedTimeStep { get; set; } = true;
+
+    public bool LimitFrameRate { get; set; } = true;
+
+    public int TargetFramesPerSecond { get; set; } = 60;
+
+    public bool ShowFrameRateInTitle { get; set; } = true;
 }
