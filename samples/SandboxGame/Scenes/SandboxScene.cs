@@ -15,43 +15,44 @@ internal sealed class SandboxScene : Scene2D
     private const string MapSavePath = "runtime-data/maps/sandbox.tilemap.json";
     private const string InputBindingsPath = "runtime-data/input/sandbox.actions.json";
 
-    private const float PlayerSize = 48f;
-    private const float PlayerSpeed = 320f;
-
     private const string ExitAction = "Exit";
+    private const string RestartAction = "Restart";
+    private const string PauseAction = "Pause";
     private const string FireAction = "Fire";
     private const string SaveMapAction = "SaveMap";
     private const string LoadMapAction = "LoadMap";
-
     private const string MoveLeftAction = "MoveLeft";
     private const string MoveRightAction = "MoveRight";
     private const string MoveUpAction = "MoveUp";
     private const string MoveDownAction = "MoveDown";
-
     private const string TeleportPlayerAction = "TeleportPlayer";
     private const string PaintTileAction = "PaintTile";
+    private const string ToggleColliderDebugAction = "ToggleColliderDebug";
 
-    private const string RestartAction = "Restart";
+    private const float PlayerSize = 48f;
+    private const float PlayerSpeed = 320f;
 
-    private const string PauseAction = "Pause";
+    private readonly CooldownTimer _fireCooldown = new(0.18f);
 
     private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
     private readonly TargetDummyPrefab _targetDummyPrefab = new();
+    private readonly EnemyPrefab _enemyPrefab = new();
 
     private PrefabSpawner? _prefabSpawner;
     private IInputDevice? _keyboard;
     private IMouseDevice? _mouse;
+    private InputActionMap? _actions;
+
     private TileMap2D? _map;
     private TileHover2DComponent? _tileHover;
     private Transform2D? _playerTransform;
     private Transform2D? _cameraTransform;
+    private Health2DComponent? _playerHealth;
     private TextRenderer2D? _debugText;
-    private InputActionMap? _actions;
     private Entity? _pauseOverlay;
-    
-    private bool _isPaused;
+
     private int _collectedPickups;
     private int _totalPickups;
     private bool _isInTriggerZone;
@@ -61,20 +62,17 @@ internal sealed class SandboxScene : Scene2D
     private int _defeatedEnemies;
     private int _totalEnemies;
     private bool _levelComplete;
-
-    private readonly EnemyPrefab _enemyPrefab = new();
-
-    private readonly CooldownTimer _fireCooldown = new(0.18f);
-
-    private Health2DComponent? _playerHealth;
+    private bool _isPaused;
+    private bool _showColliderDebug;
 
     protected override void OnEnter(SceneContext context)
     {
         _keyboard = context.Services.GetRequiredService<IInputDevice>();
         _mouse = context.Services.GetRequiredService<IMouseDevice>();
-        _prefabSpawner = new PrefabSpawner(this);
         _actions = context.Services.GetRequiredService<InputActionMap>();
         ConfigureInputActions(_actions);
+
+        _prefabSpawner = new PrefabSpawner(this);
 
         BackgroundColor = ColorRGBA.Black;
 
@@ -103,11 +101,11 @@ internal sealed class SandboxScene : Scene2D
         AddEnemy("Enemy C", 900f, 380f);
 
         CreateDebugOverlay();
-
         CreatePauseOverlay();
+        AddDebugColliderRenderersToExistingEntities();
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Hold Space fires. Tab pauses. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Hold Space fires. Tab pauses. F toggles colliders. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
@@ -129,6 +127,11 @@ internal sealed class SandboxScene : Scene2D
             }
 
             Console.WriteLine(_isPaused ? "Paused." : "Unpaused.");
+        }
+
+        if (_actions?.WasPressed(ToggleColliderDebugAction) == true)
+        {
+            ToggleColliderDebug();
         }
 
         if (_actions?.WasPressed(SaveMapAction) == true && _map is not null)
@@ -166,6 +169,11 @@ internal sealed class SandboxScene : Scene2D
         }
     }
 
+    protected override bool ShouldUpdateEntities(SindriTime time)
+    {
+        return !_isPaused;
+    }
+
     protected override void OnExit()
     {
         Console.WriteLine("Sandbox scene exited.");
@@ -173,9 +181,9 @@ internal sealed class SandboxScene : Scene2D
 
     private Entity CreatePlayer(TileMapInfo mapInfo)
     {
-        if (_keyboard is null)
+        if (_actions is null)
         {
-            throw new InvalidOperationException("Keyboard input was not initialized.");
+            throw new InvalidOperationException("Input actions were not initialized.");
         }
 
         var player = CreateEntity("Player");
@@ -196,7 +204,11 @@ internal sealed class SandboxScene : Scene2D
         _playerHealth.Damaged += (_, amount) =>
         {
             Console.WriteLine($"Player took {amount} damage. HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}");
-            SpawnFloatingText($"-{amount}", _playerTransform.Position + new Vector2F(8f, -18f), ColorRGBA.SindriRed);
+
+            if (_playerTransform is not null)
+            {
+                SpawnFloatingText($"-{amount}", _playerTransform.Position + new Vector2F(8f, -18f), ColorRGBA.SindriRed);
+            }
         };
 
         _playerHealth.Died += _ =>
@@ -204,11 +216,6 @@ internal sealed class SandboxScene : Scene2D
             Console.WriteLine("Player died.");
             Context?.ChangeScene(new GameOverScene());
         };
-
-        if (_actions is null)
-        {
-            throw new InvalidOperationException("Input actions were not initialized.");
-        }
 
         player.AddComponent(new ActionMove2DComponent(_actions, PlayerSpeed)
         {
@@ -279,9 +286,9 @@ internal sealed class SandboxScene : Scene2D
 
     private void CreateTileHover(TileMapInfo mapInfo, IMouseDevice mouse)
     {
-        if (ActiveCamera is null || _playerTransform is null)
+        if (ActiveCamera is null || _playerTransform is null || _actions is null)
         {
-            throw new InvalidOperationException("Camera/player must exist before tile hover is created.");
+            throw new InvalidOperationException("Camera/player/actions must exist before tile hover is created.");
         }
 
         var hoverEntity = CreateEntity("Tile Hover");
@@ -290,11 +297,6 @@ internal sealed class SandboxScene : Scene2D
         {
             MapWorldPosition = mapInfo.WorldPosition
         });
-
-        if (_actions is null)
-        {
-            throw new InvalidOperationException("Input actions were not initialized.");
-        }
 
         hoverEntity.AddComponent(new ActionTilePaint2DComponent(mapInfo.Map, _tileHover, _actions)
         {
@@ -336,7 +338,25 @@ internal sealed class SandboxScene : Scene2D
         });
     }
 
-   private void UpdateDebugText()
+    private void CreatePauseOverlay()
+    {
+        _pauseOverlay = CreateEntity("Pause Overlay");
+
+        _pauseOverlay.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(500f, 360f)
+        });
+
+        _pauseOverlay.AddComponent(new TextRenderer2D("PAUSED - Press Tab to resume", ColorRGBA.White)
+        {
+            RenderSpace = RenderSpace.Screen,
+            RenderLayer = 20_000
+        });
+
+        _pauseOverlay.IsActive = false;
+    }
+
+    private void UpdateDebugText()
     {
         if (_debugText is null || _playerTransform is null || _cameraTransform is null)
         {
@@ -367,7 +387,8 @@ internal sealed class SandboxScene : Scene2D
             $" | Shots {_projectileCount}" +
             $" | Dummies {_destroyedDummies}/{_totalDummies}" +
             $" | Enemies {_defeatedEnemies}/{_totalEnemies}" +
-            $" | Goal {(_levelComplete ? "complete" : "active")}";
+            $" | Goal {(_levelComplete ? "complete" : "active")}" +
+            $" | Colliders {(_showColliderDebug ? "on" : "off")}";
     }
 
     private void AddPickup(string name, float x, float y)
@@ -445,6 +466,63 @@ internal sealed class SandboxScene : Scene2D
         _totalDummies++;
     }
 
+    private void AddEnemy(string name, float x, float y)
+    {
+        if (_prefabSpawner is null || _playerTransform is null || _map is null)
+        {
+            throw new InvalidOperationException("Enemy dependencies were not initialized.");
+        }
+
+        _prefabSpawner.Spawn(
+            _enemyPrefab,
+            new EnemyPrefabConfig(
+                TriggerScene: this,
+                Name: name,
+                X: x,
+                Y: y,
+                Target: _playerTransform,
+                TileMap: _map,
+                MapWorldPosition: GetCurrentMapWorldPosition(),
+                OnDamaged: (amount, position) =>
+                {
+                    SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
+                },
+                OnDied: () =>
+                {
+                    _defeatedEnemies++;
+                    TryCompleteLevel();
+                }));
+
+        _totalEnemies++;
+    }
+
+    private void TryCompleteLevel()
+    {
+        if (_levelComplete)
+        {
+            return;
+        }
+
+        if (_totalDummies <= 0 || _totalEnemies <= 0)
+        {
+            return;
+        }
+
+        if (_destroyedDummies < _totalDummies)
+        {
+            return;
+        }
+
+        if (_defeatedEnemies < _totalEnemies)
+        {
+            return;
+        }
+
+        _levelComplete = true;
+        Console.WriteLine("All targets defeated. Victory.");
+        Context?.ChangeScene(new VictoryScene());
+    }
+
     private void FireProjectileTowardMouse()
     {
         if (_prefabSpawner is null || _playerTransform is null || _mouse is null || ActiveCamera is null || _map is null)
@@ -481,6 +559,65 @@ internal sealed class SandboxScene : Scene2D
                 TileMap: _map,
                 MapWorldPosition: GetCurrentMapWorldPosition(),
                 Damage: 1));
+
+        AddDebugColliderRenderersToExistingEntities();
+    }
+
+    private void SpawnFloatingText(string text, Vector2F position, ColorRGBA color)
+    {
+        var entity = CreateEntity($"Floating Text {text}");
+
+        entity.AddComponent(new Transform2D
+        {
+            Position = position
+        });
+
+        entity.AddComponent(new FloatingText2DComponent(text, color)
+        {
+            Velocity = new Vector2F(0f, -52f),
+            LifetimeSeconds = 0.75f,
+            RenderLayer = 10_000
+        });
+    }
+
+    private void ToggleColliderDebug()
+    {
+        _showColliderDebug = !_showColliderDebug;
+
+        foreach (var renderer in FindComponents<BoxColliderDebugRenderer2D>())
+        {
+            renderer.IsVisible = _showColliderDebug;
+        }
+
+        Console.WriteLine(_showColliderDebug ? "Collider debug enabled." : "Collider debug disabled.");
+    }
+
+    private void AddDebugColliderRenderersToExistingEntities()
+    {
+        foreach (var entity in GetActiveEntities())
+        {
+            EnsureDebugColliderRenderer(entity);
+        }
+    }
+
+    private void EnsureDebugColliderRenderer(Entity entity)
+    {
+        if (entity.GetComponent<BoxCollider2D>() is null)
+        {
+            return;
+        }
+
+        if (entity.GetComponent<BoxColliderDebugRenderer2D>() is not null)
+        {
+            return;
+        }
+
+        entity.AddComponent(new BoxColliderDebugRenderer2D
+        {
+            IsVisible = _showColliderDebug,
+            Color = ColorRGBA.SindriCyan,
+            Thickness = 2f
+        });
     }
 
     private Vector2F GetCurrentMapWorldPosition()
@@ -571,80 +708,6 @@ internal sealed class SandboxScene : Scene2D
         return new TileMapInfo(map, worldPosition, worldBounds);
     }
 
-    private void AddEnemy(string name, float x, float y)
-    {
-        if (_prefabSpawner is null || _playerTransform is null || _map is null)
-        {
-            throw new InvalidOperationException("Enemy dependencies were not initialized.");
-        }
-
-        _prefabSpawner.Spawn(
-            _enemyPrefab,
-            new EnemyPrefabConfig(
-                TriggerScene: this,
-                Name: name,
-                X: x,
-                Y: y,
-                Target: _playerTransform,
-                TileMap: _map,
-                MapWorldPosition: GetCurrentMapWorldPosition(),
-                OnDamaged: (amount, position) =>
-                {
-                    SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
-                },
-                OnDied: () =>
-                {
-                    _defeatedEnemies++;
-                    TryCompleteLevel();
-                }));
-
-        _totalEnemies++;
-    }
-
-    private void TryCompleteLevel()
-    {
-        if (_levelComplete)
-        {
-            return;
-        }
-
-        if (_totalDummies <= 0 || _totalEnemies <= 0)
-        {
-            return;
-        }
-
-        if (_destroyedDummies < _totalDummies)
-        {
-            return;
-        }
-
-        if (_defeatedEnemies < _totalEnemies)
-        {
-            return;
-        }
-
-        _levelComplete = true;
-        Console.WriteLine("All targets defeated. Victory.");
-        Context?.ChangeScene(new VictoryScene());
-    }
-
-    private void SpawnFloatingText(string text, Vector2F position, ColorRGBA color)
-    {
-        var entity = CreateEntity($"Floating Text {text}");
-
-        entity.AddComponent(new Transform2D
-        {
-            Position = position
-        });
-
-        entity.AddComponent(new FloatingText2DComponent(text, color)
-        {
-            Velocity = new Vector2F(0f, -52f),
-            LifetimeSeconds = 0.75f,
-            RenderLayer = 10_000
-        });
-    }
-
     private static void ConfigureInputActions(InputActionMap actions)
     {
         if (File.Exists(InputBindingsPath))
@@ -671,6 +734,70 @@ internal sealed class SandboxScene : Scene2D
                 changed = true;
             }
 
+            if (!actions.HasAction(ToggleColliderDebugAction))
+            {
+                actions.BindKey(ToggleColliderDebugAction, Key.F);
+                changed = true;
+            }
+
+            if (!actions.HasAction(FireAction))
+            {
+                actions.BindKey(FireAction, Key.Space);
+                changed = true;
+            }
+
+            if (!actions.HasAction(SaveMapAction))
+            {
+                actions.BindKey(SaveMapAction, Key.P);
+                changed = true;
+            }
+
+            if (!actions.HasAction(LoadMapAction))
+            {
+                actions.BindKey(LoadMapAction, Key.O);
+                changed = true;
+            }
+
+            if (!actions.HasAction(MoveLeftAction))
+            {
+                actions.BindKey(MoveLeftAction, Key.A);
+                actions.BindKey(MoveLeftAction, Key.Left);
+                changed = true;
+            }
+
+            if (!actions.HasAction(MoveRightAction))
+            {
+                actions.BindKey(MoveRightAction, Key.D);
+                actions.BindKey(MoveRightAction, Key.Right);
+                changed = true;
+            }
+
+            if (!actions.HasAction(MoveUpAction))
+            {
+                actions.BindKey(MoveUpAction, Key.W);
+                actions.BindKey(MoveUpAction, Key.Up);
+                changed = true;
+            }
+
+            if (!actions.HasAction(MoveDownAction))
+            {
+                actions.BindKey(MoveDownAction, Key.S);
+                actions.BindKey(MoveDownAction, Key.Down);
+                changed = true;
+            }
+
+            if (!actions.HasAction(TeleportPlayerAction))
+            {
+                actions.BindMouseButton(TeleportPlayerAction, MouseButton.Left);
+                changed = true;
+            }
+
+            if (!actions.HasAction(PaintTileAction))
+            {
+                actions.BindMouseButton(PaintTileAction, MouseButton.Right);
+                changed = true;
+            }
+
             if (changed)
             {
                 actions.Save(InputBindingsPath);
@@ -694,6 +821,10 @@ internal sealed class SandboxScene : Scene2D
         actions.Clear();
 
         actions.BindKey(ExitAction, Key.Escape);
+        actions.BindKey(RestartAction, Key.Enter);
+        actions.BindKey(PauseAction, Key.Tab);
+        actions.BindKey(ToggleColliderDebugAction, Key.F);
+
         actions.BindKey(FireAction, Key.Space);
         actions.BindKey(SaveMapAction, Key.P);
         actions.BindKey(LoadMapAction, Key.O);
@@ -712,31 +843,6 @@ internal sealed class SandboxScene : Scene2D
 
         actions.BindMouseButton(TeleportPlayerAction, MouseButton.Left);
         actions.BindMouseButton(PaintTileAction, MouseButton.Right);
-
-        actions.BindKey(PauseAction, Key.Tab);
-    }
-
-    private void CreatePauseOverlay()
-    {
-        _pauseOverlay = CreateEntity("Pause Overlay");
-
-        _pauseOverlay.AddComponent(new Transform2D
-        {
-            Position = new Vector2F(500f, 360f)
-        });
-
-        _pauseOverlay.AddComponent(new TextRenderer2D("PAUSED - Press Tab to resume", ColorRGBA.White)
-        {
-            RenderSpace = RenderSpace.Screen,
-            RenderLayer = 20_000
-        });
-
-        _pauseOverlay.IsActive = false;
-    }
-
-    protected override bool ShouldUpdateEntities(SindriTime time)
-    {
-        return !_isPaused;
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);

@@ -31,7 +31,10 @@ public abstract class Scene2D : Scene, IRenderableScene
         {
             foreach (var renderer in entity.GetComponents<RenderComponent>())
             {
-                renderers.Add(renderer);
+                if (renderer.IsVisible)
+                {
+                    renderers.Add(renderer);
+                }
             }
         }
 
@@ -49,7 +52,7 @@ public abstract class Scene2D : Scene, IRenderableScene
 
         foreach (var renderer in renderers)
         {
-            if (renderer.Entity is null || renderer.Entity.IsDestroyed)
+            if (renderer.Entity is null || renderer.Entity.IsDestroyed || !renderer.IsVisible)
             {
                 continue;
             }
