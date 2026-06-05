@@ -73,6 +73,12 @@ internal static class SandboxLevel2DLoader
             changed = true;
         }
 
+        if (level.RequireAllPickupsForVictory is null)
+        {
+            level.RequireAllPickupsForVictory = false;
+            changed = true;
+        }
+
         var allPickupsHaveNoHeal = level.Pickups.Count > 0 &&
         level.Pickups.All(pickup => pickup.HealAmount <= 0);
 
@@ -136,6 +142,7 @@ internal static class SandboxLevel2DLoader
         return new SandboxLevel2DConfig
         {
             PlayerMaxHealth = 10,
+            RequireAllPickupsForVictory = false,
 
             PlayerSpawn = new SandboxSpawn2D
             {
@@ -178,6 +185,8 @@ internal sealed class SandboxLevel2DConfig
 {
     public int PlayerMaxHealth { get; set; }
 
+    public bool? RequireAllPickupsForVictory { get; set; }
+
     public SandboxSpawn2D? PlayerSpawn { get; set; }
 
     public List<SandboxPickupSpawn2D> Pickups { get; set; } = new();
@@ -213,3 +222,4 @@ internal sealed class SandboxActorSpawn2D : SandboxSpawn2D
 
     public float ContactCooldownSeconds { get; set; }
 }
+

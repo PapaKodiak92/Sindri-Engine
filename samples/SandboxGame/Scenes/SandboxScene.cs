@@ -73,6 +73,7 @@ private int _destroyedDummies;
     private bool _levelComplete;
     private bool _isPaused;
     private bool _showColliderDebug;
+    private bool _requireAllPickupsForVictory;
 
     protected override void OnEnter(SceneContext context)
     {
@@ -89,6 +90,8 @@ private int _destroyedDummies;
         _map = mapInfo.Map;
 
         var level = SandboxLevel2DLoader.LoadOrCreateDefault(LevelPath);
+        _requireAllPickupsForVictory = level.RequireAllPickupsForVictory == true;
+
         var playerSpawn = level.PlayerSpawn ?? new SandboxSpawn2D { Name = "Player Spawn", X = 0f, Y = 0f };
 
         var player = CreatePlayer(mapInfo, new Vector2F(playerSpawn.X, playerSpawn.Y), level.PlayerMaxHealth);
@@ -491,7 +494,9 @@ private int _destroyedDummies;
             ? "Weapon none"
             : $"Weapon {_playerWeapon.CurrentWeaponName}";
 
-        var pickupText = $"Pickups {_collectedPickups}/{_totalPickups}";
+        var pickupText = _requireAllPickupsForVictory
+        ? $"Pickups {_collectedPickups}/{_totalPickups} required"
+        : $"Pickups {_collectedPickups}/{_totalPickups} optional";
 
         var targetText =
             $"Targets Dummies {_destroyedDummies}/{_totalDummies}  Enemies {_defeatedEnemies}/{_totalEnemies}";
@@ -523,31 +528,32 @@ private int _destroyedDummies;
                     _collectedPickups++;
                     Console.WriteLine($"Collected {name}. {_collectedPickups}/{_totalPickups}");
 
-                    if (healAmount <= 0 || _playerHealth is null || _playerTransform is null)
+                    if (healAmount > 0 && _playerHealth is not null && _playerTransform is not null)
                     {
-                        return;
+                        var actualHeal = _playerHealth.Heal(healAmount);
+
+                        if (actualHeal > 0)
+                        {
+                            Console.WriteLine($"{name} healed player for {actualHeal}. HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}");
+
+                            SpawnFloatingText(
+                                $"+{actualHeal}",
+                                _playerTransform.Position + new Vector2F(8f, -34f),
+                                ColorRGBA.SindriGreen);
+
+                            SpawnParticleBurst(
+                                _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
+                                ColorRGBA.SindriGreen,
+                                count: 10,
+                                strength: 0.7f);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{name} had heal value {healAmount}, but player could not be healed.");
+                        }
                     }
 
-                    var actualHeal = _playerHealth.Heal(healAmount);
-
-                    if (actualHeal <= 0)
-                    {
-                        Console.WriteLine($"{name} had heal value {healAmount}, but player could not be healed.");
-                        return;
-                    }
-
-                    Console.WriteLine($"{name} healed player for {actualHeal}. HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}");
-
-                    SpawnFloatingText(
-                        $"+{actualHeal}",
-                        _playerTransform.Position + new Vector2F(8f, -34f),
-                        ColorRGBA.SindriGreen);
-
-                    SpawnParticleBurst(
-                        _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
-                        ColorRGBA.SindriGreen,
-                        count: 10,
-                        strength: 0.7f);
+                    TryCompleteLevel();
                 }));
 
         _totalPickups++;
@@ -685,6 +691,11 @@ private int _destroyedDummies;
         }
 
         if (_defeatedEnemies < _totalEnemies)
+        {
+            return;
+        }
+
+        if (_requireAllPickupsForVictory && _collectedPickups < _totalPickups)
         {
             return;
         }
