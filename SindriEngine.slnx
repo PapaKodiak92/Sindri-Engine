@@ -3,6 +3,7 @@
     <Project Path="samples/SandboxGame/SandboxGame.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Sindri.Behaviors2D/Sindri.Behaviors2D.csproj" />
     <Project Path="src/Sindri.Core/Sindri.Core.csproj" />
     <Project Path="src/Sindri.Graphics/Sindri.Graphics.csproj" />
     <Project Path="src/Sindri.Input/Sindri.Input.csproj" />

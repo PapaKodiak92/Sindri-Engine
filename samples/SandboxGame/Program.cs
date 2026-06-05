@@ -1,4 +1,5 @@
-﻿using Sindri.Core;
+﻿using Sindri.Behaviors2D.Components;
+using Sindri.Core;
 using Sindri.Core.Entities;
 using Sindri.Core.Math;
 using Sindri.Graphics;
@@ -68,53 +69,5 @@ internal sealed class SandboxScene : Scene2D
     protected override void OnExit()
     {
         Console.WriteLine("Sandbox scene exited.");
-    }
-}
-
-internal sealed class KeyboardMove2DComponent : Component
-{
-    private readonly IInputDevice _input;
-    private readonly float _speed;
-
-    public KeyboardMove2DComponent(IInputDevice input, float speed)
-    {
-        _input = input;
-        _speed = speed;
-    }
-
-    public override void Update(SindriTime time)
-    {
-        if (Entity is null)
-        {
-            return;
-        }
-
-        var transform = Entity.GetRequiredComponent<Transform2D>();
-        var move = Vector2F.Zero;
-
-        if (_input.IsKeyDown(Key.A) || _input.IsKeyDown(Key.Left))
-        {
-            move += new Vector2F(-1f, 0f);
-        }
-
-        if (_input.IsKeyDown(Key.D) || _input.IsKeyDown(Key.Right))
-        {
-            move += new Vector2F(1f, 0f);
-        }
-
-        if (_input.IsKeyDown(Key.W) || _input.IsKeyDown(Key.Up))
-        {
-            move += new Vector2F(0f, -1f);
-        }
-
-        if (_input.IsKeyDown(Key.S) || _input.IsKeyDown(Key.Down))
-        {
-            move += new Vector2F(0f, 1f);
-        }
-
-        if (move != Vector2F.Zero)
-        {
-            transform.Position += move.Normalized() * _speed * time.DeltaSeconds;
-        }
     }
 }

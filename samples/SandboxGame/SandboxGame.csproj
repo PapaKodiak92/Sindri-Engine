@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\Sindri.Graphics\Sindri.Graphics.csproj" />
     <ProjectReference Include="..\..\src\Sindri.Input\Sindri.Input.csproj" />
     <ProjectReference Include="..\..\src\Sindri.Renderer2D\Sindri.Renderer2D.csproj" />
+    <ProjectReference Include="..\..\src\Sindri.Behaviors2D\Sindri.Behaviors2D.csproj" />
   </ItemGroup>
 
 </Project>
