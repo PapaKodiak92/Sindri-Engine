@@ -35,7 +35,6 @@ internal sealed class SandboxScene : Scene2D
 {
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
-    private const float CameraSpeed = 420f;
 
     private IInputDevice? _keyboard;
 
@@ -46,30 +45,16 @@ internal sealed class SandboxScene : Scene2D
 
         BackgroundColor = ColorRGBA.Black;
 
-        var cameraEntity = CreateEntity("Camera");
-        cameraEntity.AddComponent(new Transform2D { Position = Vector2F.Zero });
-        ActiveCamera = cameraEntity.AddComponent(new Camera2D());
-        cameraEntity.AddComponent(new KeyboardPan2DComponent(_keyboard, CameraSpeed));
-
         var mapInfo = CreateTileMap();
 
         var player = CreateEntity("Player");
 
-        player.AddComponent(new Transform2D
+        var playerTransform = player.AddComponent(new Transform2D
         {
             Position = Vector2F.Zero
         });
 
         player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
-
-        player.AddComponent(new MouseClickTeleport2DComponent(mouse)
-        {
-            Button = MouseButton.Left,
-            Camera = ActiveCamera,
-            CenterOnMouse = true,
-            CenterWidth = PlayerSize,
-            CenterHeight = PlayerSize
-        });
 
         player.AddComponent(new TileMapCollision2DComponent(mapInfo.Map, PlayerSize, PlayerSize)
         {
@@ -81,8 +66,32 @@ internal sealed class SandboxScene : Scene2D
             ClampToViewport = false
         });
 
+        var cameraEntity = CreateEntity("Camera");
+
+        cameraEntity.AddComponent(new Transform2D
+        {
+            Position = playerTransform.Position
+        });
+
+        ActiveCamera = cameraEntity.AddComponent(new Camera2D());
+
+        cameraEntity.AddComponent(new CameraFollow2DComponent(playerTransform)
+        {
+            TargetOffset = new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
+            FollowStrength = 1f
+        });
+
+        player.AddComponent(new MouseClickTeleport2DComponent(mouse)
+        {
+            Button = MouseButton.Left,
+            Camera = ActiveCamera,
+            CenterOnMouse = true,
+            CenterWidth = PlayerSize,
+            CenterHeight = PlayerSize
+        });
+
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. IJKL pans camera. Left click teleports. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Camera follows. Left click teleports. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid.");
     }
 
