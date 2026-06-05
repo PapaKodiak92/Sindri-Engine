@@ -60,13 +60,14 @@ internal sealed class SandboxScene : Scene2D
         _map = mapInfo.Map;
 
         var player = CreateEntity("Player");
+        player.AddTag("Player");
 
         _playerTransform = player.AddComponent(new Transform2D
         {
             Position = Vector2F.Zero
         });
 
-        var playerCollider = player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
+        player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
 
         player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
 
@@ -136,10 +137,10 @@ internal sealed class SandboxScene : Scene2D
             HoverColor = new ColorRGBA(214, 164, 74)
         });
 
-        AddPickup("Pickup A", -260f, -140f, playerCollider);
-        AddPickup("Pickup B", 220f, 180f, playerCollider);
-        AddPickup("Pickup C", 620f, -320f, playerCollider);
-        AddPickup("Pickup D", -800f, 420f, playerCollider);
+        AddPickup("Pickup A", -260f, -140f);
+        AddPickup("Pickup B", 220f, 180f);
+        AddPickup("Pickup C", 620f, -320f);
+        AddPickup("Pickup D", -800f, 420f);
 
         var debugOverlay = CreateEntity("Debug Overlay");
 
@@ -217,7 +218,7 @@ internal sealed class SandboxScene : Scene2D
         Console.WriteLine("Sandbox scene exited.");
     }
 
-    private void AddPickup(string name, float x, float y, BoxCollider2D playerCollider)
+    private void AddPickup(string name, float x, float y)
     {
         const float pickupSize = 32f;
 
@@ -233,7 +234,12 @@ internal sealed class SandboxScene : Scene2D
             IsTrigger = true
         });
 
-        var pickupComponent = pickup.AddComponent(new Pickup2DComponent(playerCollider));
+        var trigger = pickup.AddComponent(new Trigger2DComponent(this)
+        {
+            TargetTag = "Player"
+        });
+
+        var pickupComponent = pickup.AddComponent(new Pickup2DComponent(trigger));
 
         pickupComponent.Collected += _ =>
         {

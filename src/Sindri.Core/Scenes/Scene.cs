@@ -33,6 +33,45 @@ public abstract class Scene : IScene
         Context = null;
     }
 
+    public IEnumerable<Entity> GetEntities()
+    {
+        return _entities;
+    }
+
+    public IEnumerable<Entity> GetActiveEntities()
+    {
+        foreach (var entity in _entities)
+        {
+            if (entity.IsActive)
+            {
+                yield return entity;
+            }
+        }
+    }
+
+    public IEnumerable<Entity> FindEntitiesByTag(string tag)
+    {
+        foreach (var entity in GetActiveEntities())
+        {
+            if (entity.HasTag(tag))
+            {
+                yield return entity;
+            }
+        }
+    }
+
+    public IEnumerable<TComponent> FindComponents<TComponent>()
+        where TComponent : Component
+    {
+        foreach (var entity in GetActiveEntities())
+        {
+            foreach (var component in entity.GetComponents<TComponent>())
+            {
+                yield return component;
+            }
+        }
+    }
+
     protected Entity CreateEntity(string name)
     {
         var entity = new Entity(name);

@@ -3,6 +3,7 @@
 public sealed class Entity
 {
     private readonly List<Component> _components = new();
+    private readonly HashSet<string> _tags = new(StringComparer.OrdinalIgnoreCase);
 
     public Entity(string name)
     {
@@ -14,6 +15,33 @@ public sealed class Entity
     public bool IsActive { get; set; } = true;
 
     public IReadOnlyList<Component> Components => _components;
+
+    public IReadOnlyCollection<string> Tags => _tags;
+
+    public void AddTag(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            throw new ArgumentException("Tag cannot be null, empty, or whitespace.", nameof(tag));
+        }
+
+        _tags.Add(tag);
+    }
+
+    public void RemoveTag(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            return;
+        }
+
+        _tags.Remove(tag);
+    }
+
+    public bool HasTag(string tag)
+    {
+        return !string.IsNullOrWhiteSpace(tag) && _tags.Contains(tag);
+    }
 
     public TComponent AddComponent<TComponent>(TComponent component)
         where TComponent : Component

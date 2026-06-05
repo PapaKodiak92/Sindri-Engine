@@ -6,11 +6,12 @@ namespace Sindri.Behaviors2D.Components;
 
 public sealed class Pickup2DComponent : Component
 {
-    private readonly BoxCollider2D _collector;
+    private readonly Trigger2DComponent _trigger;
 
-    public Pickup2DComponent(BoxCollider2D collector)
+    public Pickup2DComponent(Trigger2DComponent trigger)
     {
-        _collector = collector ?? throw new ArgumentNullException(nameof(collector));
+        _trigger = trigger ?? throw new ArgumentNullException(nameof(trigger));
+        _trigger.Entered += Collect;
     }
 
     public bool WasCollected { get; private set; }
@@ -19,14 +20,11 @@ public sealed class Pickup2DComponent : Component
 
     public override void Update(SindriTime time)
     {
+    }
+
+    private void Collect(Entity collector)
+    {
         if (Entity is null || WasCollected || !Entity.IsActive)
-        {
-            return;
-        }
-
-        var pickupCollider = Entity.GetRequiredComponent<BoxCollider2D>();
-
-        if (!pickupCollider.Intersects(_collector))
         {
             return;
         }
