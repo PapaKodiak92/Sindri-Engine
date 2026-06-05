@@ -20,6 +20,7 @@ public static class WindowsGameRunner
 
         var keyboard = new WindowsKeyboardInput();
         engine.Services.Register<IInputDevice>(keyboard);
+        engine.Services.Register(new InputActionMap(keyboard));
 
         engine.Configure();
         var config = engine.Config;
@@ -102,7 +103,7 @@ public static class WindowsGameRunner
 
     private static TimeSpan GetTargetFrameTime(EngineConfig config)
     {
-        var targetFps = Math.Max(1, config.TargetFramesPerSecond);
+        var targetFps = System.Math.Max(1, config.TargetFramesPerSecond);
         return TimeSpan.FromSeconds(1.0 / targetFps);
     }
 

@@ -17,6 +17,11 @@ internal sealed class SandboxScene : Scene2D
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
 
+    private const string ExitAction = "Exit";
+    private const string FireAction = "Fire";
+    private const string SaveMapAction = "SaveMap";
+    private const string LoadMapAction = "LoadMap";
+
     private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
@@ -30,6 +35,7 @@ internal sealed class SandboxScene : Scene2D
     private Transform2D? _playerTransform;
     private Transform2D? _cameraTransform;
     private TextRenderer2D? _debugText;
+    private InputActionMap? _actions;
 
     private int _collectedPickups;
     private int _totalPickups;
@@ -51,6 +57,8 @@ internal sealed class SandboxScene : Scene2D
         _keyboard = context.Services.GetRequiredService<IInputDevice>();
         _mouse = context.Services.GetRequiredService<IMouseDevice>();
         _prefabSpawner = new PrefabSpawner(this);
+        _actions = context.Services.GetRequiredService<InputActionMap>();
+        ConfigureInputActions(_actions);
 
         BackgroundColor = ColorRGBA.Black;
 
@@ -87,19 +95,19 @@ internal sealed class SandboxScene : Scene2D
 
     protected override void OnUpdate(SindriTime time)
     {
-        if (_keyboard?.WasKeyPressed(Key.Escape) == true)
+        if (_actions?.WasPressed(ExitAction) == true)
         {
             Context?.RequestExit();
             return;
         }
 
-        if (_keyboard?.WasKeyPressed(Key.P) == true && _map is not null)
+        if (_actions?.WasPressed(SaveMapAction) == true && _map is not null)
         {
             TileMapJsonSerializer.Save(_map, MapSavePath);
             Console.WriteLine($"Saved tilemap to {MapSavePath}");
         }
 
-        if (_keyboard?.WasKeyPressed(Key.O) == true && _map is not null)
+        if (_actions?.WasPressed(LoadMapAction) == true && _map is not null)
         {
             try
             {
@@ -115,7 +123,7 @@ internal sealed class SandboxScene : Scene2D
 
         _fireCooldown.Update(time);
 
-        if (_keyboard?.IsKeyDown(Key.Space) == true && _fireCooldown.TryUse())
+        if (_actions?.IsDown(FireAction) == true && _fireCooldown.TryUse())
         {
             FireProjectileTowardMouse();
         }
@@ -559,6 +567,16 @@ internal sealed class SandboxScene : Scene2D
             LifetimeSeconds = 0.75f,
             RenderLayer = 10_000
         });
+    }
+
+    private static void ConfigureInputActions(InputActionMap actions)
+    {
+        actions.Clear();
+
+        actions.BindKey(ExitAction, Key.Escape);
+        actions.BindKey(FireAction, Key.Space);
+        actions.BindKey(SaveMapAction, Key.P);
+        actions.BindKey(LoadMapAction, Key.O);
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
