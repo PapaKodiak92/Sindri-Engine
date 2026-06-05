@@ -55,6 +55,7 @@ internal sealed class SandboxScene : Scene2D
     private Health2DComponent? _playerHealth;
     private TextRenderer2D? _debugText;
     private Entity? _pauseOverlay;
+    private CameraShake2DComponent? _cameraShake;
 
     private int _collectedPickups;
     private int _totalPickups;
@@ -208,6 +209,8 @@ internal sealed class SandboxScene : Scene2D
         {
             Console.WriteLine($"Player took {amount} damage. HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}");
 
+            _cameraShake?.Shake(0.16f, 10f);
+
             if (_playerTransform is not null)
             {
                 SpawnFloatingText($"-{amount}", _playerTransform.Position + new Vector2F(8f, -18f), ColorRGBA.SindriRed);
@@ -284,6 +287,7 @@ internal sealed class SandboxScene : Scene2D
         });
 
         ActiveCamera = cameraEntity.AddComponent(new Camera2D());
+        _cameraShake = cameraEntity.AddComponent(new CameraShake2DComponent());
 
         cameraEntity.AddComponent(new CameraFollow2DComponent(playerTransform)
         {
@@ -479,6 +483,7 @@ internal sealed class SandboxScene : Scene2D
                 Y: y,
                 OnDamaged: (amount, position) =>
                 {
+                    _cameraShake?.Shake(0.06f, 3f);
                     SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
                 },
                 OnDied: () =>
@@ -509,6 +514,7 @@ internal sealed class SandboxScene : Scene2D
                 MapWorldPosition: GetCurrentMapWorldPosition(),
                 OnDamaged: (amount, position) =>
                 {
+                    _cameraShake?.Shake(0.06f, 3f);
                     SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
                 },
                 OnDied: () =>
