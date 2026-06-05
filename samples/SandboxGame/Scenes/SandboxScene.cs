@@ -553,7 +553,7 @@ private int _destroyedDummies;
                 }));
     }
 
-    private void AddTargetDummy(string name, float x, float y)
+    private void AddTargetDummy(string name, float x, float y, int maxHealth = 3)
     {
         if (_prefabSpawner is null)
         {
@@ -566,6 +566,7 @@ private int _destroyedDummies;
                 Name: name,
                 X: x,
                 Y: y,
+                MaxHealth: maxHealth <= 0 ? 3 : maxHealth,
                 OnDamaged: (amount, position) =>
                 {
                     _cameraShake?.Shake(0.06f, 3f);
@@ -581,7 +582,7 @@ private int _destroyedDummies;
         _totalDummies++;
     }
 
-    private void AddEnemy(string name, float x, float y)
+    private void AddEnemy(string name, float x, float y, int maxHealth = 4, float moveSpeed = 120f)
     {
         if (_prefabSpawner is null || _playerTransform is null || _map is null)
         {
@@ -598,6 +599,8 @@ private int _destroyedDummies;
                 Target: _playerTransform,
                 TileMap: _map,
                 MapWorldPosition: GetCurrentMapWorldPosition(),
+                MaxHealth: maxHealth <= 0 ? 4 : maxHealth,
+                MoveSpeed: moveSpeed <= 0f ? 120f : moveSpeed,
                 OnDamaged: (amount, position) =>
                 {
                     _cameraShake?.Shake(0.06f, 3f);
@@ -627,12 +630,12 @@ private int _destroyedDummies;
 
         foreach (var dummy in level.TargetDummies)
         {
-            AddTargetDummy(dummy.Name, dummy.X, dummy.Y);
+            AddTargetDummy(dummy.Name, dummy.X, dummy.Y, dummy.MaxHealth);
         }
 
         foreach (var enemy in level.Enemies)
         {
-            AddEnemy(enemy.Name, enemy.X, enemy.Y);
+            AddEnemy(enemy.Name, enemy.X, enemy.Y, enemy.MaxHealth, enemy.MoveSpeed);
         }
     }
 
@@ -1063,6 +1066,7 @@ private int _destroyedDummies;
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
 }
+
 
 
 

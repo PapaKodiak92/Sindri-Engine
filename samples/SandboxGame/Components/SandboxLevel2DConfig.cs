@@ -67,6 +67,30 @@ internal static class SandboxLevel2DLoader
             changed = true;
         }
 
+        foreach (var dummy in level.TargetDummies)
+        {
+            if (dummy.MaxHealth <= 0)
+            {
+                dummy.MaxHealth = 3;
+                changed = true;
+            }
+        }
+
+        foreach (var enemy in level.Enemies)
+        {
+            if (enemy.MaxHealth <= 0)
+            {
+                enemy.MaxHealth = 4;
+                changed = true;
+            }
+
+            if (enemy.MoveSpeed <= 0f)
+            {
+                enemy.MoveSpeed = 120f;
+                changed = true;
+            }
+        }
+
         return changed;
     }
 
@@ -96,16 +120,16 @@ internal static class SandboxLevel2DLoader
 
             TargetDummies =
             {
-                new() { Name = "Dummy A", X = 360f, Y = -180f },
-                new() { Name = "Dummy B", X = 720f, Y = 240f },
-                new() { Name = "Dummy C", X = -620f, Y = -360f }
+                new() { Name = "Dummy A", X = 360f, Y = -180f, MaxHealth = 3 },
+                new() { Name = "Dummy B", X = 720f, Y = 240f, MaxHealth = 3 },
+                new() { Name = "Dummy C", X = -620f, Y = -360f, MaxHealth = 3 }
             },
 
             Enemies =
             {
-                new() { Name = "Enemy A", X = -420f, Y = 260f },
-                new() { Name = "Enemy B", X = 520f, Y = -420f },
-                new() { Name = "Enemy C", X = 900f, Y = 380f }
+                new() { Name = "Enemy A", X = -420f, Y = 260f, MaxHealth = 4, MoveSpeed = 120f },
+                new() { Name = "Enemy B", X = 520f, Y = -420f, MaxHealth = 4, MoveSpeed = 120f },
+                new() { Name = "Enemy C", X = 900f, Y = 380f, MaxHealth = 4, MoveSpeed = 120f }
             }
         };
     }
@@ -119,16 +143,23 @@ internal sealed class SandboxLevel2DConfig
 
     public List<SandboxSpawn2D> TriggerZones { get; set; } = new();
 
-    public List<SandboxSpawn2D> TargetDummies { get; set; } = new();
+    public List<SandboxActorSpawn2D> TargetDummies { get; set; } = new();
 
-    public List<SandboxSpawn2D> Enemies { get; set; } = new();
+    public List<SandboxActorSpawn2D> Enemies { get; set; } = new();
 }
 
-internal sealed class SandboxSpawn2D
+internal class SandboxSpawn2D
 {
     public string Name { get; set; } = "Spawn";
 
     public float X { get; set; }
 
     public float Y { get; set; }
+}
+
+internal sealed class SandboxActorSpawn2D : SandboxSpawn2D
+{
+    public int MaxHealth { get; set; }
+
+    public float MoveSpeed { get; set; }
 }

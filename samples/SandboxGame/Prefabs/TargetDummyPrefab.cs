@@ -10,6 +10,7 @@ internal sealed record TargetDummyPrefabConfig(
     string Name,
     float X,
     float Y,
+    int MaxHealth,
     Action<int, Vector2F>? OnDamaged,
     Action? OnDied);
 
@@ -30,7 +31,9 @@ internal sealed class TargetDummyPrefab : IPrefab<TargetDummyPrefabConfig>
 
         dummy.AddComponent(new BoxCollider2D(dummySize, dummySize));
 
-        var health = dummy.AddComponent(new Health2DComponent(maxHealth: 3)
+        var maxHealth = System.Math.Max(1, config.MaxHealth);
+
+        var health = dummy.AddComponent(new Health2DComponent(maxHealth)
         {
             DestroyEntityOnDeath = true
         });

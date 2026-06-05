@@ -16,6 +16,8 @@ internal sealed record EnemyPrefabConfig(
     Transform2D Target,
     TileMap2D TileMap,
     Vector2F MapWorldPosition,
+    int MaxHealth,
+    float MoveSpeed,
     Action<int, Vector2F>? OnDamaged,
     Action? OnDied);
 
@@ -24,7 +26,10 @@ internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
     public Entity Create(IEntitySpawner spawner, EnemyPrefabConfig config)
     {
         const float enemySize = 44f;
-        const float enemySpeed = 120f;
+
+        var enemySpeed = config.MoveSpeed <= 0f
+            ? 120f
+            : config.MoveSpeed;
 
         var enemy = spawner.SpawnEntity(config.Name);
         enemy.AddTag("Enemy");
@@ -60,7 +65,9 @@ internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
             CooldownSeconds = 0.75f
         });
 
-        var health = enemy.AddComponent(new Health2DComponent(maxHealth: 4)
+        var maxHealth = System.Math.Max(1, config.MaxHealth);
+
+        var health = enemy.AddComponent(new Health2DComponent(maxHealth)
         {
             DestroyEntityOnDeath = true
         });
