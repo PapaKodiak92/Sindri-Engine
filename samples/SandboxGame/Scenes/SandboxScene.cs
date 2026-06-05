@@ -32,10 +32,15 @@ internal sealed class SandboxScene : Scene2D
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private PrefabSpawner? _prefabSpawner;
 
+    private readonly ProjectilePrefab _projectilePrefab = new();
+    private IMouseDevice? _mouse;
+    private int _projectileCount;
+
     protected override void OnEnter(SceneContext context)
     {
         _keyboard = context.Services.GetRequiredService<IInputDevice>();
-        var mouse = context.Services.GetRequiredService<IMouseDevice>();
+        _mouse = context.Services.GetRequiredService<IMouseDevice>();
+        var mouse = _mouse;
 
         _prefabSpawner = new PrefabSpawner(this);
 
@@ -61,7 +66,7 @@ internal sealed class SandboxScene : Scene2D
         CreateDebugOverlay();
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Space fires. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
@@ -91,6 +96,11 @@ internal sealed class SandboxScene : Scene2D
             {
                 Console.WriteLine($"Failed to load tilemap: {ex.Message}");
             }
+        }
+
+        if (_keyboard?.WasKeyPressed(Key.Space) == true)
+        {
+            FireProjectileTowardMouse();
         }
 
         UpdateDebugText();
@@ -246,7 +256,8 @@ internal sealed class SandboxScene : Scene2D
             $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}" +
             tileText +
             $" | Pickups {_collectedPickups}/{_totalPickups}" +
-            $" | Zone {(_isInTriggerZone ? "inside" : "outside")}";
+            $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
+            $" | Shots {_projectileCount}";
     }
 
     private void AddPickup(string name, float x, float y)
@@ -374,4 +385,53 @@ internal sealed class SandboxScene : Scene2D
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
+
+    private void FireProjectileTowardMouse()
+    {
+        if (_prefabSpawner is null || _playerTransform is null || _mouse is null || ActiveCamera is null || _map is null)
+        {
+            return;
+        }
+
+        var mouseScreen = new Vector2F(_mouse.Position.X, _mouse.Position.Y);
+        var mouseWorld = ActiveCamera.ScreenToWorld(mouseScreen);
+
+        var playerCenter = _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f);
+        var direction = (mouseWorld - playerCenter).Normalized();
+
+        if (direction == Vector2F.Zero)
+        {
+            return;
+        }
+
+        const float projectileSpeed = 720f;
+        const float projectileSpawnOffset = 34f;
+
+        var spawnPosition = playerCenter + direction * projectileSpawnOffset;
+
+        _projectileCount++;
+
+        _prefabSpawner.Spawn(
+            _projectilePrefab,
+            new ProjectilePrefabConfig(
+                Name: $"Projectile {_projectileCount}",
+                X: spawnPosition.X,
+                Y: spawnPosition.Y,
+                Velocity: direction * projectileSpeed,
+                TileMap: _map,
+                MapWorldPosition: GetCurrentMapWorldPosition()));
+    }
+    
+    private Vector2F GetCurrentMapWorldPosition()
+    {
+        foreach (var entity in GetActiveEntities())
+        {
+            if (entity.Name == "Test Tilemap")
+            {
+                return entity.GetRequiredComponent<Transform2D>().Position;
+            }
+        }
+
+        return Vector2F.Zero;
+    }
 }
