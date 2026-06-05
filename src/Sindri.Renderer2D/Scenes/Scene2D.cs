@@ -22,8 +22,9 @@ public abstract class Scene2D : Scene, IRenderableScene
         if (ActiveCamera is not null)
         {
             ActiveCamera.ViewportSize = graphics.ViewportSize;
-            graphics.DrawOffset = ActiveCamera.GetDrawOffset();
         }
+
+        var worldOffset = ActiveCamera?.GetDrawOffset() ?? Vector2F.Zero;
 
         var renderers = new List<RenderComponent>();
 
@@ -54,6 +55,10 @@ public abstract class Scene2D : Scene, IRenderableScene
 
         foreach (var renderer in renderers)
         {
+            graphics.DrawOffset = renderer.RenderSpace == RenderSpace.World
+                ? worldOffset
+                : Vector2F.Zero;
+
             renderer.Render(graphics);
         }
 

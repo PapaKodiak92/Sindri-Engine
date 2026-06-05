@@ -35,6 +35,9 @@ internal sealed class SandboxScene : Scene2D
 {
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
+    private Transform2D? _playerTransform;
+    private Transform2D? _cameraTransform;
+    private TextRenderer2D? _debugText;
 
     private IInputDevice? _keyboard;
 
@@ -49,7 +52,20 @@ internal sealed class SandboxScene : Scene2D
 
         var player = CreateEntity("Player");
 
-        var playerTransform = player.AddComponent(new Transform2D
+        var debugOverlay = CreateEntity("Debug Overlay");
+
+        debugOverlay.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(12f, 12f)
+        });
+
+        _debugText = debugOverlay.AddComponent(new TextRenderer2D("Debug", ColorRGBA.White)
+        {
+            RenderSpace = RenderSpace.Screen,
+            RenderLayer = 10_000
+        });
+
+        _playerTransform = player.AddComponent(new Transform2D
         {
             Position = Vector2F.Zero
         });
@@ -78,14 +94,14 @@ internal sealed class SandboxScene : Scene2D
 
         var cameraEntity = CreateEntity("Camera");
 
-        cameraEntity.AddComponent(new Transform2D
+        _cameraTransform = cameraEntity.AddComponent(new Transform2D
         {
-            Position = playerTransform.Position
+            Position = _playerTransform.Position
         });
 
         ActiveCamera = cameraEntity.AddComponent(new Camera2D());
 
-        cameraEntity.AddComponent(new CameraFollow2DComponent(playerTransform)
+        cameraEntity.AddComponent(new CameraFollow2DComponent(_playerTransform)
         {
             TargetOffset = new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
             FollowStrength = 1f
@@ -112,6 +128,13 @@ internal sealed class SandboxScene : Scene2D
         if (_keyboard?.WasKeyPressed(Key.Escape) == true)
         {
             Context?.RequestExit();
+        }
+        
+        if (_debugText is not null && _playerTransform is not null && _cameraTransform is not null)
+        {
+            _debugText.Text =
+                $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
+                $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}";
         }
     }
 

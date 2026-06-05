@@ -212,6 +212,45 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
         }
     }
 
+    public void DrawText(string text, Vector2F position, ColorRGBA color)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        var targetHdc = _frameActive
+            ? _memoryHdc
+            : Win32.GetDC(_hwnd);
+
+        if (targetHdc == nint.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            var x = position.X + DrawOffset.X;
+            var y = position.Y + DrawOffset.Y;
+
+            Win32.SetBkMode(targetHdc, Win32.TRANSPARENT);
+            Win32.SetTextColor(targetHdc, ToColorRef(color));
+            Win32.TextOutW(
+                targetHdc,
+                (int)MathF.Round(x),
+                (int)MathF.Round(y),
+                text,
+                text.Length);
+        }
+        finally
+        {
+            if (!_frameActive)
+            {
+                Win32.ReleaseDC(_hwnd, targetHdc);
+            }
+        }
+    }
+
     private static uint ToColorRef(ColorRGBA color)
     {
         return (uint)(color.R | color.G << 8 | color.B << 16);

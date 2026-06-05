@@ -15,4 +15,6 @@ public interface IGraphicsDevice
     void Clear(ColorRGBA color);
 
     void FillRectangle(Rect2D rect, ColorRGBA color);
+
+    void DrawText(string text, Vector2F position, ColorRGBA color);
 }

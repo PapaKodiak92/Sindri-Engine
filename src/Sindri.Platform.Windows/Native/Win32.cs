@@ -38,6 +38,7 @@ internal static partial class Win32
     public static readonly nint IDC_ARROW = 32512;
 
     public delegate nint WndProc(nint hwnd, uint message, nuint wParam, nint lParam);
+    public const int TRANSPARENT = 1;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct WNDCLASSEXW
@@ -196,4 +197,18 @@ internal static partial class Win32
 
     [DllImport("gdi32.dll", SetLastError = true)]
     public static extern bool DeleteDC(nint hdc);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern uint SetTextColor(nint hdc, uint colorRef);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern int SetBkMode(nint hdc, int mode);
+
+    [DllImport("gdi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool TextOutW(
+        nint hdc,
+        int x,
+        int y,
+        string text,
+        int length);
 }
