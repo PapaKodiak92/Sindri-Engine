@@ -34,10 +34,7 @@ internal sealed class SandboxScene : Scene2D
 
     private const string ZoomInAction = "ZoomIn";
     private const string ZoomOutAction = "ZoomOut";
-
-    private readonly CooldownTimer _fireCooldown = new(0.18f);
-
-    private readonly PickupPrefab _pickupPrefab = new();
+private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
     private readonly TargetDummyPrefab _targetDummyPrefab = new();
@@ -56,12 +53,12 @@ internal sealed class SandboxScene : Scene2D
     private TextRenderer2D? _debugText;
     private Entity? _pauseOverlay;
     private CameraShake2DComponent? _cameraShake;
+    private PlayerProjectileWeapon2DComponent? _playerWeapon;
 
     private int _collectedPickups;
     private int _totalPickups;
     private bool _isInTriggerZone;
-    private int _projectileCount;
-    private int _destroyedDummies;
+private int _destroyedDummies;
     private int _totalDummies;
     private int _defeatedEnemies;
     private int _totalEnemies;
@@ -87,6 +84,7 @@ internal sealed class SandboxScene : Scene2D
         var playerTransform = player.GetRequiredComponent<Transform2D>();
 
         CreateCamera(playerTransform, mapInfo.WorldBounds);
+        AttachPlayerWeapon(player, mapInfo);
         CreateTileHover(mapInfo, _mouse);
         CreateAimReticle(_mouse);
 
@@ -157,13 +155,6 @@ internal sealed class SandboxScene : Scene2D
             {
                 Console.WriteLine($"Failed to load tilemap: {ex.Message}");
             }
-        }
-
-        _fireCooldown.Update(time);
-
-        if (!_isPaused && _actions?.IsDown(FireAction) == true && _fireCooldown.TryUse())
-        {
-            FireProjectileTowardMouse();
         }
 
         UpdateDebugText();
@@ -322,22 +313,35 @@ internal sealed class SandboxScene : Scene2D
         });
     }
 
-    private void CreateAimReticle(IMouseDevice mouse)
+    private void AttachPlayerWeapon(Entity player, TileMapInfo mapInfo)
     {
-        if (ActiveCamera is null)
+        if (_actions is null || _mouse is null || ActiveCamera is null || _prefabSpawner is null || _map is null)
         {
-            throw new InvalidOperationException("Camera must exist before aim reticle is created.");
+            throw new InvalidOperationException("Weapon dependencies were not initialized.");
         }
 
-        var reticle = CreateEntity("Aim Reticle");
-
-        reticle.AddComponent(new AimReticle2DRenderer(mouse, ActiveCamera)
+        _playerWeapon = player.AddComponent(new PlayerProjectileWeapon2DComponent(
+            _actions,
+            _mouse,
+            ActiveCamera,
+            this,
+            _prefabSpawner,
+            _projectilePrefab,
+            _map,
+            GetCurrentMapWorldPosition,
+            onFired: spawnPosition =>
+            {
+                SpawnParticleBurst(spawnPosition, ColorRGBA.SindriGold, count: 8, strength: 0.55f);
+                AddDebugColliderRenderersToExistingEntities();
+            })
         {
-            Color = ColorRGBA.SindriGold,
-            Size = 28f,
-            Thickness = 3f,
-            DrawCenterDot = true,
-            RenderLayer = 40_000
+            FireAction = FireAction,
+            OwnerWidth = PlayerSize,
+            OwnerHeight = PlayerSize,
+            ProjectileSpeed = 720f,
+            ProjectileSpawnOffset = 34f,
+            FireCooldownSeconds = 0.18f,
+            Damage = 1
         });
     }
 
@@ -441,7 +445,7 @@ internal sealed class SandboxScene : Scene2D
             tileText +
             $" | Pickups {_collectedPickups}/{_totalPickups}" +
             $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
-            $" | Shots {_projectileCount}" +
+            $" | Shots {(_playerWeapon?.ShotsFired ?? 0)}" +
             $" | Dummies {_destroyedDummies}/{_totalDummies}" +
             $" | Enemies {_defeatedEnemies}/{_totalEnemies}" +
             $" | Goal {(_levelComplete ? "complete" : "active")}" +
@@ -584,46 +588,23 @@ internal sealed class SandboxScene : Scene2D
         Context?.ChangeScene(new VictoryScene());
     }
 
-    private void FireProjectileTowardMouse()
+    private void CreateAimReticle(IMouseDevice mouse)
     {
-        if (_prefabSpawner is null || _playerTransform is null || _mouse is null || ActiveCamera is null || _map is null)
+        if (ActiveCamera is null)
         {
-            return;
+            throw new InvalidOperationException("Camera must exist before aim reticle is created.");
         }
 
-        var mouseScreen = new Vector2F(_mouse.Position.X, _mouse.Position.Y);
-        var mouseWorld = ActiveCamera.ScreenToWorld(mouseScreen);
+        var reticle = CreateEntity("Aim Reticle");
 
-        var playerCenter = _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f);
-        var direction = (mouseWorld - playerCenter).Normalized();
-
-        if (direction == Vector2F.Zero)
+        reticle.AddComponent(new AimReticle2DRenderer(mouse, ActiveCamera)
         {
-            return;
-        }
-
-        const float projectileSpeed = 720f;
-        const float projectileSpawnOffset = 34f;
-
-        var spawnPosition = playerCenter + direction * projectileSpawnOffset;
-
-        _projectileCount++;
-
-        _prefabSpawner.Spawn(
-        _projectilePrefab,
-        new ProjectilePrefabConfig(
-            TriggerScene: this,
-            Name: $"Projectile {_projectileCount}",
-            X: spawnPosition.X,
-            Y: spawnPosition.Y,
-            Velocity: direction * projectileSpeed,
-            TileMap: _map,
-            MapWorldPosition: GetCurrentMapWorldPosition(),
-            Damage: 1));
-
-        SpawnParticleBurst(spawnPosition, ColorRGBA.SindriGold, count: 8, strength: 0.55f);
-
-        AddDebugColliderRenderersToExistingEntities();
+            Color = ColorRGBA.SindriGold,
+            Size = 28f,
+            Thickness = 3f,
+            DrawCenterDot = true,
+            RenderLayer = 40_000
+        });
     }
 
     private void SpawnParticleBurst(Vector2F position, ColorRGBA color, int count, float strength = 1f)
@@ -946,3 +927,5 @@ internal sealed class SandboxScene : Scene2D
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
 }
+
+
