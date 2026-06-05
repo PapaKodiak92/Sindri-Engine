@@ -13,6 +13,7 @@ using Sindri.Renderer2D.Tilemaps;
 internal sealed class SandboxScene : Scene2D
 {
     private const string MapSavePath = "runtime-data/maps/sandbox.tilemap.json";
+    private const string InputBindingsPath = "runtime-data/input/sandbox.actions.json";
 
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
@@ -594,6 +595,20 @@ internal sealed class SandboxScene : Scene2D
     }
 
     private static void ConfigureInputActions(InputActionMap actions)
+    {
+        if (File.Exists(InputBindingsPath))
+        {
+            actions.Load(InputBindingsPath);
+            Console.WriteLine($"Loaded input bindings from {InputBindingsPath}");
+            return;
+        }
+
+        ConfigureDefaultInputActions(actions);
+        actions.Save(InputBindingsPath);
+        Console.WriteLine($"Created default input bindings at {InputBindingsPath}");
+    }
+
+    private static void ConfigureDefaultInputActions(InputActionMap actions)
     {
         actions.Clear();
 
