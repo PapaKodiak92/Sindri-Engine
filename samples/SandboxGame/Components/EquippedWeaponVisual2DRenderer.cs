@@ -6,12 +6,12 @@ using Sindri.Renderer2D.Components;
 
 internal sealed class EquippedWeaponVisual2DRenderer : RenderComponent
 {
-    private readonly PlayerProjectileWeapon2DComponent _weapon;
+    private readonly PlayerWeapon2DComponent _weapon;
     private readonly IMouseDevice _mouse;
     private readonly Camera2D _camera;
 
     public EquippedWeaponVisual2DRenderer(
-        PlayerProjectileWeapon2DComponent weapon,
+        PlayerWeapon2DComponent weapon,
         IMouseDevice mouse,
         Camera2D camera)
     {

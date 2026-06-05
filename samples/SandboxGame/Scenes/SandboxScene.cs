@@ -41,6 +41,7 @@ internal sealed class SandboxScene : Scene2D
 private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
+    private readonly MeleeHitboxPrefab _meleeHitboxPrefab = new();
     private readonly TargetDummyPrefab _targetDummyPrefab = new();
     private readonly EnemyPrefab _enemyPrefab = new();
 
@@ -57,7 +58,7 @@ private readonly PickupPrefab _pickupPrefab = new();
     private TextRenderer2D? _debugText;
     private Entity? _pauseOverlay;
     private CameraShake2DComponent? _cameraShake;
-    private PlayerProjectileWeapon2DComponent? _playerWeapon;
+    private PlayerWeapon2DComponent? _playerWeapon;
 
     private int _collectedPickups;
     private int _totalPickups;
@@ -324,18 +325,19 @@ private int _destroyedDummies;
             throw new InvalidOperationException("Weapon dependencies were not initialized.");
         }
 
-        _playerWeapon = player.AddComponent(new PlayerProjectileWeapon2DComponent(
+        var weapon = player.AddComponent(new PlayerWeapon2DComponent(
             _actions,
             _mouse,
             ActiveCamera,
             this,
             _prefabSpawner,
             _projectilePrefab,
+            _meleeHitboxPrefab,
             _map,
             GetCurrentMapWorldPosition,
-            onFired: (spawnPosition, weapon) =>
+            onFired: (spawnPosition, firedWeapon) =>
             {
-                SpawnParticleBurst(spawnPosition, weapon.MuzzleColor, count: 8, strength: 0.55f);
+                SpawnParticleBurst(spawnPosition, firedWeapon.MuzzleColor, count: 8, strength: 0.55f);
                 AddDebugColliderRenderersToExistingEntities();
             })
         {
@@ -345,37 +347,79 @@ private int _destroyedDummies;
             OwnerHeight = PlayerSize
         });
 
-        _playerWeapon.Weapons.Add(new Weapon2DDefinition(
+        _playerWeapon = weapon;
+
+        weapon.Weapons.Add(new Weapon2DDefinition(
             Name: "Bow",
+            AttackType: WeaponAttackType.Projectile,
             CooldownSeconds: 0.22f,
             ProjectileSpeed: 720f,
             ProjectileSpawnOffset: 34f,
             Damage: 1,
             ProjectileSize: 12f,
             ProjectileColor: ColorRGBA.White,
-            MuzzleColor: ColorRGBA.SindriGold));
+            MuzzleColor: ColorRGBA.SindriGold,
+            MeleeRange: 48f,
+            MeleeSize: 48f,
+            MeleeLifetimeSeconds: 0.08f));
 
-        _playerWeapon.Weapons.Add(new Weapon2DDefinition(
+        weapon.Weapons.Add(new Weapon2DDefinition(
             Name: "Crossbow",
+            AttackType: WeaponAttackType.Projectile,
             CooldownSeconds: 0.55f,
             ProjectileSpeed: 980f,
             ProjectileSpawnOffset: 36f,
             Damage: 2,
             ProjectileSize: 14f,
             ProjectileColor: ColorRGBA.SindriCyan,
-            MuzzleColor: ColorRGBA.SindriCyan));
+            MuzzleColor: ColorRGBA.SindriCyan,
+            MeleeRange: 48f,
+            MeleeSize: 48f,
+            MeleeLifetimeSeconds: 0.08f));
 
-        _playerWeapon.Weapons.Add(new Weapon2DDefinition(
+        weapon.Weapons.Add(new Weapon2DDefinition(
             Name: "Throwing Dagger",
+            AttackType: WeaponAttackType.Projectile,
             CooldownSeconds: 0.12f,
             ProjectileSpeed: 620f,
             ProjectileSpawnOffset: 30f,
             Damage: 1,
             ProjectileSize: 8f,
             ProjectileColor: ColorRGBA.SindriGold,
-            MuzzleColor: ColorRGBA.SindriGold));
+            MuzzleColor: ColorRGBA.SindriGold,
+            MeleeRange: 44f,
+            MeleeSize: 36f,
+            MeleeLifetimeSeconds: 0.06f));
 
-        player.AddComponent(new EquippedWeaponVisual2DRenderer(_playerWeapon, _mouse, ActiveCamera)
+        weapon.Weapons.Add(new Weapon2DDefinition(
+            Name: "Sword",
+            AttackType: WeaponAttackType.Melee,
+            CooldownSeconds: 0.32f,
+            ProjectileSpeed: 0f,
+            ProjectileSpawnOffset: 0f,
+            Damage: 2,
+            ProjectileSize: 18f,
+            ProjectileColor: ColorRGBA.SindriGold,
+            MuzzleColor: ColorRGBA.SindriGold,
+            MeleeRange: 46f,
+            MeleeSize: 58f,
+            MeleeLifetimeSeconds: 0.10f));
+
+        weapon.Weapons.Add(new Weapon2DDefinition(
+            Name: "Claws",
+            AttackType: WeaponAttackType.Melee,
+            CooldownSeconds: 0.16f,
+            ProjectileSpeed: 0f,
+            ProjectileSpawnOffset: 0f,
+            Damage: 1,
+            ProjectileSize: 10f,
+            ProjectileColor: ColorRGBA.White,
+            MuzzleColor: ColorRGBA.White,
+            MeleeRange: 34f,
+            MeleeSize: 44f,
+            MeleeLifetimeSeconds: 0.07f));
+
+        player.AddComponent(new EquippedWeaponVisual2DRenderer(weapon, _mouse, ActiveCamera)
         {
             OwnerWidth = PlayerSize,
             OwnerHeight = PlayerSize,
@@ -485,7 +529,7 @@ private int _destroyedDummies;
             $" | Pickups {_collectedPickups}/{_totalPickups}" +
             $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
             $" | Weapon {(_playerWeapon?.CurrentWeaponName ?? "none")}" +
-            $" | Shots {(_playerWeapon?.ShotsFired ?? 0)}" +
+            $" | Attacks {(_playerWeapon?.AttackCount ?? 0)}" +
             $" | Dummies {_destroyedDummies}/{_totalDummies}" +
             $" | Enemies {_defeatedEnemies}/{_totalEnemies}" +
             $" | Goal {(_levelComplete ? "complete" : "active")}" +
@@ -975,5 +1019,8 @@ private int _destroyedDummies;
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
 }
+
+
+
 
 

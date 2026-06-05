@@ -8,7 +8,7 @@ using Sindri.Input;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Tilemaps;
 
-internal sealed class PlayerProjectileWeapon2DComponent : Component
+internal sealed class PlayerWeapon2DComponent : Component
 {
     private readonly InputActionMap _actions;
     private readonly IMouseDevice _mouse;
@@ -16,6 +16,7 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
     private readonly Scene _triggerScene;
     private readonly PrefabSpawner _prefabSpawner;
     private readonly ProjectilePrefab _projectilePrefab;
+    private readonly MeleeHitboxPrefab _meleeHitboxPrefab;
     private readonly TileMap2D _tileMap;
     private readonly Func<Vector2F> _getMapWorldPosition;
     private readonly Action<Vector2F, Weapon2DDefinition>? _onFired;
@@ -23,13 +24,14 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
 
     private int _weaponIndex;
 
-    public PlayerProjectileWeapon2DComponent(
+    public PlayerWeapon2DComponent(
         InputActionMap actions,
         IMouseDevice mouse,
         Camera2D camera,
         Scene triggerScene,
         PrefabSpawner prefabSpawner,
         ProjectilePrefab projectilePrefab,
+        MeleeHitboxPrefab meleeHitboxPrefab,
         TileMap2D tileMap,
         Func<Vector2F> getMapWorldPosition,
         Action<Vector2F, Weapon2DDefinition>? onFired)
@@ -40,6 +42,7 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
         _triggerScene = triggerScene ?? throw new ArgumentNullException(nameof(triggerScene));
         _prefabSpawner = prefabSpawner ?? throw new ArgumentNullException(nameof(prefabSpawner));
         _projectilePrefab = projectilePrefab ?? throw new ArgumentNullException(nameof(projectilePrefab));
+        _meleeHitboxPrefab = meleeHitboxPrefab ?? throw new ArgumentNullException(nameof(meleeHitboxPrefab));
         _tileMap = tileMap ?? throw new ArgumentNullException(nameof(tileMap));
         _getMapWorldPosition = getMapWorldPosition ?? throw new ArgumentNullException(nameof(getMapWorldPosition));
         _onFired = onFired;
@@ -57,7 +60,7 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
 
     public float OwnerHeight { get; set; } = 48f;
 
-    public int ShotsFired { get; private set; }
+    public int AttackCount { get; private set; }
 
     public Weapon2DDefinition CurrentWeaponDefinition => CurrentWeapon;
 
@@ -70,14 +73,18 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
             if (Weapons.Count == 0)
             {
                 return new Weapon2DDefinition(
-                    Name: "Default",
+                    Name: "Default Bow",
+                    AttackType: WeaponAttackType.Projectile,
                     CooldownSeconds: 0.18f,
                     ProjectileSpeed: 720f,
                     ProjectileSpawnOffset: 34f,
                     Damage: 1,
                     ProjectileSize: 12f,
                     ProjectileColor: ColorRGBA.White,
-                    MuzzleColor: ColorRGBA.SindriGold);
+                    MuzzleColor: ColorRGBA.SindriGold,
+                    MeleeRange: 48f,
+                    MeleeSize: 48f,
+                    MeleeLifetimeSeconds: 0.08f);
             }
 
             _weaponIndex = System.Math.Clamp(_weaponIndex, 0, Weapons.Count - 1);
@@ -112,7 +119,7 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
             return;
         }
 
-        Fire(weapon);
+        Attack(weapon);
     }
 
     private void CycleNextWeapon()
@@ -128,7 +135,7 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
         Console.WriteLine($"Equipped weapon: {CurrentWeapon.Name}");
     }
 
-    private void Fire(Weapon2DDefinition weapon)
+    private void Attack(Weapon2DDefinition weapon)
     {
         if (Entity is null)
         {
@@ -148,15 +155,26 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
             return;
         }
 
-        var spawnPosition = ownerCenter + direction * weapon.ProjectileSpawnOffset;
+        AttackCount++;
 
-        ShotsFired++;
+        if (weapon.AttackType == WeaponAttackType.Melee)
+        {
+            SpawnMeleeHitbox(weapon, ownerCenter, direction);
+            return;
+        }
+
+        SpawnProjectile(weapon, ownerCenter, direction);
+    }
+
+    private void SpawnProjectile(Weapon2DDefinition weapon, Vector2F ownerCenter, Vector2F direction)
+    {
+        var spawnPosition = ownerCenter + direction * weapon.ProjectileSpawnOffset;
 
         _prefabSpawner.Spawn(
             _projectilePrefab,
             new ProjectilePrefabConfig(
                 TriggerScene: _triggerScene,
-                Name: $"{weapon.Name} Projectile {ShotsFired}",
+                Name: $"{weapon.Name} Projectile {AttackCount}",
                 X: spawnPosition.X,
                 Y: spawnPosition.Y,
                 Velocity: direction * weapon.ProjectileSpeed,
@@ -167,5 +185,25 @@ internal sealed class PlayerProjectileWeapon2DComponent : Component
                 Color: weapon.ProjectileColor));
 
         _onFired?.Invoke(spawnPosition, weapon);
+    }
+
+    private void SpawnMeleeHitbox(Weapon2DDefinition weapon, Vector2F ownerCenter, Vector2F direction)
+    {
+        var center = ownerCenter + direction * weapon.MeleeRange;
+        var size = System.MathF.Max(4f, weapon.MeleeSize);
+
+        _prefabSpawner.Spawn(
+            _meleeHitboxPrefab,
+            new MeleeHitboxPrefabConfig(
+                TriggerScene: _triggerScene,
+                Name: $"{weapon.Name} Hitbox {AttackCount}",
+                X: center.X - size / 2f,
+                Y: center.Y - size / 2f,
+                Size: size,
+                Damage: weapon.Damage,
+                Color: weapon.ProjectileColor,
+                LifetimeSeconds: weapon.MeleeLifetimeSeconds));
+
+        _onFired?.Invoke(center, weapon);
     }
 }
