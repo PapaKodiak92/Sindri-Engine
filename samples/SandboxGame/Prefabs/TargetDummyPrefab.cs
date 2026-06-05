@@ -44,10 +44,16 @@ internal sealed class TargetDummyPrefab : IPrefab<TargetDummyPrefabConfig>
             config.OnDied?.Invoke();
         };
 
-        dummy.AddComponent(new RectangleRenderer2D(dummySize, dummySize, ColorRGBA.SindriRed)
+        var bodyRenderer = dummy.AddComponent(new RectangleRenderer2D(dummySize, dummySize, ColorRGBA.SindriRed)
         {
             ClampToViewport = false,
             RenderLayer = 9
+        });
+
+        dummy.AddComponent(new DamageFlash2DComponent(health, bodyRenderer)
+        {
+            FlashColor = ColorRGBA.White,
+            FlashDurationSeconds = 0.12f
         });
 
         dummy.AddComponent(new HealthBar2DRenderer(health)
