@@ -13,6 +13,8 @@ public sealed class Entity
 
     public bool IsActive { get; set; } = true;
 
+    public IReadOnlyList<Component> Components => _components;
+
     public TComponent AddComponent<TComponent>(TComponent component)
         where TComponent : Component
     {
@@ -41,6 +43,18 @@ public sealed class Entity
         }
 
         return null;
+    }
+
+    public IEnumerable<TComponent> GetComponents<TComponent>()
+        where TComponent : Component
+    {
+        foreach (var component in _components)
+        {
+            if (component is TComponent typedComponent)
+            {
+                yield return typedComponent;
+            }
+        }
     }
 
     public TComponent GetRequiredComponent<TComponent>()

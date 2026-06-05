@@ -34,19 +34,22 @@ internal sealed class SandboxScene : Scene, IRenderableScene
     private const float PlayerSpeed = 320f;
 
     private IInputDevice? _input;
-    private Transform2D? _playerTransform;
 
     protected override void OnEnter(SceneContext context)
     {
         _input = context.Services.GetRequiredService<IInputDevice>();
 
         var player = CreateEntity("Player");
-        _playerTransform = player.AddComponent(new Transform2D
+
+        player.AddComponent(new Transform2D
         {
             Position = new Vector2F(
                 1280f / 2f - PlayerSize / 2f,
                 720f / 2f - PlayerSize / 2f)
         });
+
+        player.AddComponent(new KeyboardMove2DComponent(_input, PlayerSpeed));
+        player.AddComponent(new RectangleRenderComponent(PlayerSize, PlayerSize, ColorRGBA.SindriGold));
 
         Console.WriteLine("Sandbox scene entered.");
         Console.WriteLine("WASD / Arrow Keys move. ESC exits.");
@@ -54,17 +57,55 @@ internal sealed class SandboxScene : Scene, IRenderableScene
 
     protected override void OnUpdate(SindriTime time)
     {
-        if (_input is null || _playerTransform is null)
-        {
-            return;
-        }
-
-        if (_input.WasKeyPressed(Key.Escape))
+        if (_input?.WasKeyPressed(Key.Escape) == true)
         {
             Context?.RequestExit();
+        }
+    }
+
+    public void Render(IGraphicsDevice graphics)
+    {
+        graphics.Clear(ColorRGBA.SindriBlue);
+
+        foreach (var entity in Entities)
+        {
+            if (!entity.IsActive)
+            {
+                continue;
+            }
+
+            foreach (var renderer in entity.GetComponents<RenderComponent>())
+            {
+                renderer.Render(graphics);
+            }
+        }
+    }
+
+    protected override void OnExit()
+    {
+        Console.WriteLine("Sandbox scene exited.");
+    }
+}
+
+internal sealed class KeyboardMove2DComponent : Component
+{
+    private readonly IInputDevice _input;
+    private readonly float _speed;
+
+    public KeyboardMove2DComponent(IInputDevice input, float speed)
+    {
+        _input = input;
+        _speed = speed;
+    }
+
+    public override void Update(SindriTime time)
+    {
+        if (Entity is null)
+        {
             return;
         }
 
+        var transform = Entity.GetRequiredComponent<Transform2D>();
         var move = Vector2F.Zero;
 
         if (_input.IsKeyDown(Key.A) || _input.IsKeyDown(Key.Left))
@@ -89,35 +130,44 @@ internal sealed class SandboxScene : Scene, IRenderableScene
 
         if (move != Vector2F.Zero)
         {
-            _playerTransform.Position += move.Normalized() * PlayerSpeed * time.DeltaSeconds;
+            transform.Position += move.Normalized() * _speed * time.DeltaSeconds;
         }
     }
+}
 
-    public void Render(IGraphicsDevice graphics)
+internal sealed class RectangleRenderComponent : RenderComponent
+{
+    private readonly float _width;
+    private readonly float _height;
+    private readonly ColorRGBA _color;
+
+    public RectangleRenderComponent(float width, float height, ColorRGBA color)
     {
-        graphics.Clear(ColorRGBA.SindriBlue);
+        _width = width;
+        _height = height;
+        _color = color;
+    }
 
-        if (_playerTransform is null)
+    public override void Render(IGraphicsDevice graphics)
+    {
+        if (Entity is null)
         {
             return;
         }
 
+        var transform = Entity.GetRequiredComponent<Transform2D>();
         var viewport = graphics.ViewportSize;
-        var position = _playerTransform.Position;
+
+        var position = transform.Position;
 
         position = new Vector2F(
-            X: Math.Clamp(position.X, 0f, Math.Max(0f, viewport.Width - PlayerSize)),
-            Y: Math.Clamp(position.Y, 0f, Math.Max(0f, viewport.Height - PlayerSize)));
+            X: Math.Clamp(position.X, 0f, Math.Max(0f, viewport.Width - _width)),
+            Y: Math.Clamp(position.Y, 0f, Math.Max(0f, viewport.Height - _height)));
 
-        _playerTransform.Position = position;
+        transform.Position = position;
 
         graphics.FillRectangle(
-            new Rect2D(position.X, position.Y, PlayerSize, PlayerSize),
-            ColorRGBA.SindriGold);
-    }
-
-    protected override void OnExit()
-    {
-        Console.WriteLine("Sandbox scene exited.");
+            new Rect2D(position.X, position.Y, _width, _height),
+            _color);
     }
 }
