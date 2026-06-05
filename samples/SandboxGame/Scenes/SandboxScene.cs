@@ -58,6 +58,7 @@ private readonly PickupPrefab _pickupPrefab = new();
     private Transform2D? _cameraTransform;
     private Health2DComponent? _playerHealth;
     private TextRenderer2D? _debugText;
+    private TextRenderer2D? _hudText;
     private Entity? _pauseOverlay;
     private CameraShake2DComponent? _cameraShake;
     private PlayerWeapon2DComponent? _playerWeapon;
@@ -101,6 +102,7 @@ private int _destroyedDummies;
         SpawnSandboxLevel(level);
 
         CreateDebugOverlay();
+        CreateGameplayHud();
         CreatePauseOverlay();
         AddDebugColliderRenderersToExistingEntities();
 
@@ -155,6 +157,7 @@ private int _destroyedDummies;
         }
 
         UpdateDebugText();
+        UpdateGameplayHud();
 
         if (!_isPaused && _tileHover?.WasTileClicked == true)
         {
@@ -409,6 +412,22 @@ private int _destroyedDummies;
         });
     }
 
+    private void CreateGameplayHud()
+    {
+        var hud = CreateEntity("Gameplay HUD");
+
+        hud.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(12f, 660f)
+        });
+
+        _hudText = hud.AddComponent(new TextRenderer2D("HUD", ColorRGBA.SindriGold)
+        {
+            RenderSpace = RenderSpace.Screen,
+            RenderLayer = 10_001
+        });
+    }
+
     private void CreatePauseOverlay()
     {
         _pauseOverlay = CreateEntity("Pause Overlay");
@@ -449,18 +468,39 @@ private int _destroyedDummies;
             : $"HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}";
 
         _debugText.Text =
-            $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
-            $"{hpText} | " +
-            $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0} Z{(ActiveCamera?.Zoom ?? 1f):0.00}" +
-            tileText +
-            $" | Pickups {_collectedPickups}/{_totalPickups}" +
-            $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
-            $" | Weapon {(_playerWeapon?.CurrentWeaponName ?? "none")}" +
-            $" | Attacks {(_playerWeapon?.AttackCount ?? 0)}" +
-            $" | Dummies {_destroyedDummies}/{_totalDummies}" +
-            $" | Enemies {_defeatedEnemies}/{_totalEnemies}" +
-            $" | Goal {(_levelComplete ? "complete" : "active")}" +
-            $" | Colliders {(_showColliderDebug ? "on" : "off")}";
+        $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
+        $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0} Z{(ActiveCamera?.Zoom ?? 1f):0.00}" +
+        tileText +
+        $" | Goal {(_levelComplete ? "complete" : "active")}" +
+        $" | Colliders {(_showColliderDebug ? "on" : "off")}";
+    }
+
+    private void UpdateGameplayHud()
+    {
+        if (_hudText is null)
+        {
+            return;
+        }
+
+        var hpText = _playerHealth is null
+            ? "HP --/--"
+            : $"HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}";
+
+        var weaponText = _playerWeapon is null
+            ? "Weapon none"
+            : $"Weapon {_playerWeapon.CurrentWeaponName}";
+
+        var pickupText = $"Pickups {_collectedPickups}/{_totalPickups}";
+
+        var targetText =
+            $"Targets Dummies {_destroyedDummies}/{_totalDummies}  Enemies {_defeatedEnemies}/{_totalEnemies}";
+
+        var zoneText = _isInTriggerZone
+            ? "Zone inside"
+            : "Zone outside";
+
+        _hudText.Text =
+            $"{hpText}   |   {weaponText}   |   {pickupText}   |   {targetText}   |   {zoneText}";
     }
 
     private void AddPickup(string name, float x, float y)
