@@ -782,6 +782,35 @@ private int _destroyedDummies;
         map.SetTile(50, 40, ColorRGBA.SindriGreen);
         map.SetTile(70, 60, ColorRGBA.White);
 
+        if (File.Exists(MapSavePath))
+        {
+            try
+            {
+                var loadedMap = TileMapJsonSerializer.Load(MapSavePath);
+
+                if (loadedMap.Width == map.Width &&
+                    loadedMap.Height == map.Height &&
+                    loadedMap.TileSize == map.TileSize)
+                {
+                    map.CopyFrom(loadedMap);
+                    Console.WriteLine($"Loaded startup tilemap from {MapSavePath}");
+                }
+                else
+                {
+                    Console.WriteLine($"Saved tilemap dimensions did not match current map. Using default map.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load startup tilemap: {ex.Message}");
+            }
+        }
+        else
+        {
+            TileMapJsonSerializer.Save(map, MapSavePath);
+            Console.WriteLine($"Created default startup tilemap at {MapSavePath}");
+        }
+
         var worldPosition = new Vector2F(
             -width * tileSize / 2f,
             -height * tileSize / 2f);
