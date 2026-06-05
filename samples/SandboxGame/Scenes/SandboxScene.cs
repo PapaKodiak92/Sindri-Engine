@@ -31,6 +31,8 @@ internal sealed class SandboxScene : Scene2D
     private const string TeleportPlayerAction = "TeleportPlayer";
     private const string PaintTileAction = "PaintTile";
 
+    private const string RestartAction = "Restart";
+
     private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
@@ -181,9 +183,9 @@ internal sealed class SandboxScene : Scene2D
         _playerHealth.Died += _ =>
         {
             Console.WriteLine("Player died.");
-            Context?.RequestExit();
+            Context?.ChangeScene(new GameOverScene());
         };
-
+        
         if (_actions is null)
         {
             throw new InvalidOperationException("Input actions were not initialized.");
@@ -599,7 +601,31 @@ internal sealed class SandboxScene : Scene2D
         if (File.Exists(InputBindingsPath))
         {
             actions.Load(InputBindingsPath);
-            Console.WriteLine($"Loaded input bindings from {InputBindingsPath}");
+
+            var changed = false;
+
+            if (!actions.HasAction(RestartAction))
+            {
+                actions.BindKey(RestartAction, Key.Enter);
+                changed = true;
+            }
+
+            if (!actions.HasAction(ExitAction))
+            {
+                actions.BindKey(ExitAction, Key.Escape);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                actions.Save(InputBindingsPath);
+                Console.WriteLine($"Updated input bindings at {InputBindingsPath}");
+            }
+            else
+            {
+                Console.WriteLine($"Loaded input bindings from {InputBindingsPath}");
+            }
+
             return;
         }
 

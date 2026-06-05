@@ -31,6 +31,16 @@ public sealed class InputActionMap
         _mouseBindings.Clear();
     }
 
+    public bool HasAction(string actionName)
+    {
+        if (string.IsNullOrWhiteSpace(actionName))
+        {
+            return false;
+        }
+
+        return _keyBindings.ContainsKey(actionName) || _mouseBindings.ContainsKey(actionName);
+    }
+
     public void BindKey(string actionName, Key key)
     {
         if (string.IsNullOrWhiteSpace(actionName))
