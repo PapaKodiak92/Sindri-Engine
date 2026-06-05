@@ -102,8 +102,8 @@ internal sealed class SandboxScene : Scene2D
     private TileMapInfo CreateTileMap()
     {
         const int tileSize = 64;
-        const int width = 30;
-        const int height = 20;
+        const int width = 100;
+        const int height = 80;
 
         var map = new TileMap2D(width, height, tileSize);
 
@@ -134,11 +134,20 @@ internal sealed class SandboxScene : Scene2D
             map.SetTile(width - 1, y, new ColorRGBA(80, 80, 88), isSolid: true);
         }
 
-        map.SetTile(5, 5, ColorRGBA.SindriRed, isSolid: true);
-        map.SetTile(6, 5, ColorRGBA.SindriRed, isSolid: true);
-        map.SetTile(7, 5, ColorRGBA.SindriRed, isSolid: true);
+        for (var x = 10; x < 20; x++)
+        {
+            map.SetTile(x, 10, ColorRGBA.SindriRed, isSolid: true);
+        }
+
+        for (var y = 14; y < 26; y++)
+        {
+            map.SetTile(25, y, ColorRGBA.SindriRed, isSolid: true);
+        }
+
         map.SetTile(8, 8, ColorRGBA.SindriGreen);
         map.SetTile(12, 6, ColorRGBA.White);
+        map.SetTile(50, 40, ColorRGBA.SindriGreen);
+        map.SetTile(70, 60, ColorRGBA.White);
 
         var worldPosition = new Vector2F(
             -width * tileSize / 2f,
