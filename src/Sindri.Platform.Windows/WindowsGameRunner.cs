@@ -70,7 +70,8 @@ public static class WindowsGameRunner
 
                 if (config.ShowFrameRateInTitle)
                 {
-                    window.SetTitle($"{config.WindowTitle} - {currentFps} FPS");
+                    var viewport = graphics.ViewportSize;
+                    window.SetTitle($"{config.WindowTitle} - {currentFps} FPS - {viewport.Width}x{viewport.Height}");
                 }
             }
 

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Sindri.Graphics;
 
 namespace Sindri.Platform.Windows.Native;
 
@@ -24,15 +25,34 @@ internal sealed class NativeWindow : IDisposable
     {
         RegisterWindowClass();
 
+        var style = Win32.WS_OVERLAPPEDWINDOW;
+        const uint extendedStyle = 0;
+
+        var windowRect = new Win32.RECT
+        {
+            Left = 0,
+            Top = 0,
+            Right = width,
+            Bottom = height
+        };
+
+        if (!Win32.AdjustWindowRectEx(ref windowRect, style, false, extendedStyle))
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to calculate Sindri native window size.");
+        }
+
+        var windowWidth = windowRect.Right - windowRect.Left;
+        var windowHeight = windowRect.Bottom - windowRect.Top;
+
         var hwnd = Win32.CreateWindowExW(
-            0,
+            extendedStyle,
             WindowClassName,
             title,
-            Win32.WS_OVERLAPPEDWINDOW,
+            style,
             Win32.CW_USEDEFAULT,
             Win32.CW_USEDEFAULT,
-            width,
-            height,
+            windowWidth,
+            windowHeight,
             nint.Zero,
             nint.Zero,
             Win32.GetModuleHandleW(null),
@@ -55,6 +75,18 @@ internal sealed class NativeWindow : IDisposable
     public void SetTitle(string title)
     {
         Win32.SetWindowTextW(_hwnd, title);
+    }
+
+    public Size2D GetClientSize()
+    {
+        if (!Win32.GetClientRect(_hwnd, out var rect))
+        {
+            return new Size2D(0, 0);
+        }
+
+        return new Size2D(
+            Width: Math.Max(0, rect.Right - rect.Left),
+            Height: Math.Max(0, rect.Bottom - rect.Top));
     }
 
     public bool ProcessMessages()

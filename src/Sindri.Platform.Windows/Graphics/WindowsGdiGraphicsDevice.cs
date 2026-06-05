@@ -12,6 +12,21 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
         _hwnd = hwnd;
     }
 
+    public Size2D ViewportSize
+    {
+        get
+        {
+            if (!Win32.GetClientRect(_hwnd, out var rect))
+            {
+                return new Size2D(0, 0);
+            }
+
+            return new Size2D(
+                Width: Math.Max(0, rect.Right - rect.Left),
+                Height: Math.Max(0, rect.Bottom - rect.Top));
+        }
+    }
+
     public void Clear(ColorRGBA color)
     {
         var hdc = Win32.GetDC(_hwnd);
