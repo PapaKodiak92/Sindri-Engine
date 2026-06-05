@@ -213,7 +213,16 @@ internal sealed class SandboxScene : Scene2D
 
             if (_playerTransform is not null)
             {
-                SpawnFloatingText($"-{amount}", _playerTransform.Position + new Vector2F(8f, -18f), ColorRGBA.SindriRed);
+                SpawnParticleBurst(
+                    _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
+                    ColorRGBA.SindriRed,
+                    count: 18,
+                    strength: 1.2f);
+
+                SpawnFloatingText(
+                    $"-{amount}",
+                    _playerTransform.Position + new Vector2F(8f, -18f),
+                    ColorRGBA.SindriRed);
             }
         };
 
@@ -484,6 +493,7 @@ internal sealed class SandboxScene : Scene2D
                 OnDamaged: (amount, position) =>
                 {
                     _cameraShake?.Shake(0.06f, 3f);
+                    SpawnParticleBurst(position + new Vector2F(24f, 24f), ColorRGBA.White, count: 12, strength: 0.8f);
                     SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
                 },
                 OnDied: () =>
@@ -515,6 +525,7 @@ internal sealed class SandboxScene : Scene2D
                 OnDamaged: (amount, position) =>
                 {
                     _cameraShake?.Shake(0.06f, 3f);
+                    SpawnParticleBurst(position + new Vector2F(24f, 24f), ColorRGBA.White, count: 12, strength: 0.8f);
                     SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
                 },
                 OnDied: () =>
@@ -591,6 +602,27 @@ internal sealed class SandboxScene : Scene2D
                 Damage: 1));
 
         AddDebugColliderRenderersToExistingEntities();
+    }
+
+    private void SpawnParticleBurst(Vector2F position, ColorRGBA color, int count, float strength = 1f)
+    {
+        var entity = CreateEntity("Particle Burst");
+
+        entity.AddComponent(new Transform2D
+        {
+            Position = position
+        });
+
+        entity.AddComponent(new ParticleBurst2DComponent(count, color)
+        {
+            MinSpeed = 45f * strength,
+            MaxSpeed = 170f * strength,
+            MinLifetimeSeconds = 0.2f,
+            MaxLifetimeSeconds = 0.55f,
+            MinSize = 3f,
+            MaxSize = 7f,
+            RenderLayer = 35
+        });
     }
 
     private void SpawnFloatingText(string text, Vector2F position, ColorRGBA color)
