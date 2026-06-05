@@ -2,7 +2,7 @@
 
 namespace Sindri.Core.Scenes;
 
-public abstract class Scene : IScene
+public abstract class Scene : IScene, IEntitySpawner
 {
     private readonly List<Entity> _entities = new();
 
@@ -39,6 +39,13 @@ public abstract class Scene : IScene
 
         _entities.Clear();
         Context = null;
+    }
+
+    public Entity SpawnEntity(string name)
+    {
+        var entity = new Entity(name);
+        _entities.Add(entity);
+        return entity;
     }
 
     public IEnumerable<Entity> GetEntities()
@@ -82,9 +89,7 @@ public abstract class Scene : IScene
 
     protected Entity CreateEntity(string name)
     {
-        var entity = new Entity(name);
-        _entities.Add(entity);
-        return entity;
+        return SpawnEntity(name);
     }
 
     protected void DestroyEntity(Entity entity)

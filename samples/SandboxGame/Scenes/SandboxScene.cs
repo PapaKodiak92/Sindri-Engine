@@ -244,82 +244,39 @@ internal sealed class SandboxScene : Scene2D
 
     private void AddPickup(string name, float x, float y)
     {
-        const float pickupSize = 32f;
-
-        var pickup = CreateEntity(name);
-
-        pickup.AddComponent(new Transform2D
-        {
-            Position = new Vector2F(x, y)
-        });
-
-        pickup.AddComponent(new BoxCollider2D(pickupSize, pickupSize)
-        {
-            IsTrigger = true
-        });
-
-        var trigger = pickup.AddComponent(new Trigger2DComponent(this)
-        {
-            TargetTag = "Player"
-        });
-
-        var pickupComponent = pickup.AddComponent(new Pickup2DComponent(trigger));
-
-        pickupComponent.Collected += _ =>
-        {
-            _collectedPickups++;
-            Console.WriteLine($"Collected {name}. {_collectedPickups}/{_totalPickups}");
-        };
-
-        pickup.AddComponent(new RectangleRenderer2D(pickupSize, pickupSize, ColorRGBA.SindriGreen)
-        {
-            ClampToViewport = false,
-            RenderLayer = 8
-        });
+        SandboxPrefabs.CreatePickup(
+            this,
+            this,
+            name,
+            x,
+            y,
+            onCollected: () =>
+            {
+                _collectedPickups++;
+                Console.WriteLine($"Collected {name}. {_collectedPickups}/{_totalPickups}");
+            });
 
         _totalPickups++;
     }
 
     private void AddTriggerZone(string name, float x, float y)
     {
-        const float zoneWidth = 160f;
-        const float zoneHeight = 120f;
-
-        var zone = CreateEntity(name);
-
-        zone.AddComponent(new Transform2D
-        {
-            Position = new Vector2F(x, y)
-        });
-
-        zone.AddComponent(new BoxCollider2D(zoneWidth, zoneHeight)
-        {
-            IsTrigger = true
-        });
-
-        var trigger = zone.AddComponent(new Trigger2DComponent(this)
-        {
-            TargetTag = "Player"
-        });
-
-        trigger.Entered += _ =>
-        {
-            _isInTriggerZone = true;
-            Console.WriteLine("Entered trigger zone.");
-        };
-
-        trigger.Exited += _ =>
-        {
-            _isInTriggerZone = false;
-            Console.WriteLine("Exited trigger zone.");
-        };
-
-        zone.AddComponent(new RectangleRenderer2D(zoneWidth, zoneHeight, ColorRGBA.SindriCyan)
-        {
-            ClampToViewport = false,
-            RenderLayer = 3,
-            RenderOrder = 0
-        });
+        SandboxPrefabs.CreateTriggerZone(
+            this,
+            this,
+            name,
+            x,
+            y,
+            onEntered: () =>
+            {
+                _isInTriggerZone = true;
+                Console.WriteLine("Entered trigger zone.");
+            },
+            onExited: () =>
+            {
+                _isInTriggerZone = false;
+                Console.WriteLine("Exited trigger zone.");
+            });
     }
 
     private TileMapInfo CreateTileMap()
