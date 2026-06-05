@@ -91,7 +91,7 @@ private int _destroyedDummies;
         var level = SandboxLevel2DLoader.LoadOrCreateDefault(LevelPath);
         var playerSpawn = level.PlayerSpawn ?? new SandboxSpawn2D { Name = "Player Spawn", X = 0f, Y = 0f };
 
-        var player = CreatePlayer(mapInfo, new Vector2F(playerSpawn.X, playerSpawn.Y));
+        var player = CreatePlayer(mapInfo, new Vector2F(playerSpawn.X, playerSpawn.Y), level.PlayerMaxHealth);
         var playerTransform = player.GetRequiredComponent<Transform2D>();
 
         CreateCamera(playerTransform, mapInfo.WorldBounds);
@@ -175,7 +175,7 @@ private int _destroyedDummies;
         Console.WriteLine("Sandbox scene exited.");
     }
 
-    private Entity CreatePlayer(TileMapInfo mapInfo, Vector2F startPosition)
+    private Entity CreatePlayer(TileMapInfo mapInfo, Vector2F startPosition, int maxHealth)
     {
         if (_actions is null)
         {
@@ -192,7 +192,7 @@ private int _destroyedDummies;
 
         player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
 
-        _playerHealth = player.AddComponent(new Health2DComponent(maxHealth: 10)
+        _playerHealth = player.AddComponent(new Health2DComponent(maxHealth: System.Math.Max(1, maxHealth))
         {
             DestroyEntityOnDeath = false
         });
@@ -1068,6 +1068,7 @@ private int _destroyedDummies;
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
 }
+
 
 
 

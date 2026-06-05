@@ -67,6 +67,12 @@ internal static class SandboxLevel2DLoader
             changed = true;
         }
 
+        if (level.PlayerMaxHealth <= 0)
+        {
+            level.PlayerMaxHealth = 10;
+            changed = true;
+        }
+
         foreach (var dummy in level.TargetDummies)
         {
             if (dummy.MaxHealth <= 0)
@@ -110,6 +116,8 @@ internal static class SandboxLevel2DLoader
     {
         return new SandboxLevel2DConfig
         {
+            PlayerMaxHealth = 10,
+
             PlayerSpawn = new SandboxSpawn2D
             {
                 Name = "Player Spawn",
@@ -178,6 +186,8 @@ internal static class SandboxLevel2DLoader
 
 internal sealed class SandboxLevel2DConfig
 {
+    public int PlayerMaxHealth { get; set; }
+
     public SandboxSpawn2D? PlayerSpawn { get; set; }
 
     public List<SandboxSpawn2D> Pickups { get; set; } = new();
