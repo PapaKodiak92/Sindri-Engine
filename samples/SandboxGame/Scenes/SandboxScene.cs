@@ -60,6 +60,7 @@ internal sealed class SandboxScene : Scene2D
     private int _totalDummies;
     private int _defeatedEnemies;
     private int _totalEnemies;
+    private bool _levelComplete;
 
     private readonly EnemyPrefab _enemyPrefab = new();
 
@@ -365,7 +366,8 @@ internal sealed class SandboxScene : Scene2D
             $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
             $" | Shots {_projectileCount}" +
             $" | Dummies {_destroyedDummies}/{_totalDummies}" +
-            $" | Enemies {_defeatedEnemies}/{_totalEnemies}";
+            $" | Enemies {_defeatedEnemies}/{_totalEnemies}" +
+            $" | Goal {(_levelComplete ? "complete" : "active")}";
     }
 
     private void AddPickup(string name, float x, float y)
@@ -427,16 +429,17 @@ internal sealed class SandboxScene : Scene2D
         _prefabSpawner.Spawn(
             _targetDummyPrefab,
             new TargetDummyPrefabConfig(
-            Name: name,
-            X: x,
-            Y: y,
-            OnDamaged: (amount, position) =>
-            {
-                SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
-            },
-            OnDied: () =>
+                Name: name,
+                X: x,
+                Y: y,
+                OnDamaged: (amount, position) =>
+                {
+                    SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
+                },
+                OnDied: () =>
                 {
                     _destroyedDummies++;
+                    TryCompleteLevel();
                 }));
 
         _totalDummies++;
@@ -578,23 +581,51 @@ internal sealed class SandboxScene : Scene2D
         _prefabSpawner.Spawn(
             _enemyPrefab,
             new EnemyPrefabConfig(
-            TriggerScene: this,
-            Name: name,
-            X: x,
-            Y: y,
-            Target: _playerTransform,
-            TileMap: _map,
-            MapWorldPosition: GetCurrentMapWorldPosition(),
-            OnDamaged: (amount, position) =>
-            {
-                SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
-            },
-            OnDied: () =>
+                TriggerScene: this,
+                Name: name,
+                X: x,
+                Y: y,
+                Target: _playerTransform,
+                TileMap: _map,
+                MapWorldPosition: GetCurrentMapWorldPosition(),
+                OnDamaged: (amount, position) =>
+                {
+                    SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
+                },
+                OnDied: () =>
                 {
                     _defeatedEnemies++;
+                    TryCompleteLevel();
                 }));
 
         _totalEnemies++;
+    }
+
+    private void TryCompleteLevel()
+    {
+        if (_levelComplete)
+        {
+            return;
+        }
+
+        if (_totalDummies <= 0 || _totalEnemies <= 0)
+        {
+            return;
+        }
+
+        if (_destroyedDummies < _totalDummies)
+        {
+            return;
+        }
+
+        if (_defeatedEnemies < _totalEnemies)
+        {
+            return;
+        }
+
+        _levelComplete = true;
+        Console.WriteLine("All targets defeated. Victory.");
+        Context?.ChangeScene(new VictoryScene());
     }
 
     private void SpawnFloatingText(string text, Vector2F position, ColorRGBA color)
