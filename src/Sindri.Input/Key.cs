@@ -20,6 +20,11 @@ public enum Key
     S,
     D,
 
+    I,
+    J,
+    K,
+    L,
+
     Q,
     E,
     R,

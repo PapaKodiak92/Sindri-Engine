@@ -34,6 +34,7 @@ internal sealed class SandboxScene : Scene2D
 {
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
+    private const float CameraSpeed = 420f;
 
     private IInputDevice? _keyboard;
 
@@ -44,13 +45,21 @@ internal sealed class SandboxScene : Scene2D
 
         BackgroundColor = ColorRGBA.SindriBlue;
 
+        var cameraEntity = CreateEntity("Camera");
+        cameraEntity.AddComponent(new Transform2D { Position = Vector2F.Zero });
+        ActiveCamera = cameraEntity.AddComponent(new Camera2D());
+        cameraEntity.AddComponent(new KeyboardPan2DComponent(_keyboard, CameraSpeed));
+
+        AddWorldMarker("North West Marker", -320f, -180f, ColorRGBA.SindriRed);
+        AddWorldMarker("South East Marker", 360f, 220f, ColorRGBA.SindriGreen);
+        AddWorldMarker("Far Left Marker", -700f, 80f, ColorRGBA.White);
+        AddWorldMarker("Far Right Marker", 700f, -80f, ColorRGBA.White);
+
         var player = CreateEntity("Player");
 
         player.AddComponent(new Transform2D
         {
-            Position = new Vector2F(
-                1280f / 2f - PlayerSize / 2f,
-                720f / 2f - PlayerSize / 2f)
+            Position = Vector2F.Zero
         });
 
         player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
@@ -58,15 +67,19 @@ internal sealed class SandboxScene : Scene2D
         player.AddComponent(new MouseClickTeleport2DComponent(mouse)
         {
             Button = MouseButton.Left,
+            Camera = ActiveCamera,
             CenterOnMouse = true,
             CenterWidth = PlayerSize,
             CenterHeight = PlayerSize
         });
 
-        player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold));
+        player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold)
+        {
+            ClampToViewport = false
+        });
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move. Left click teleports. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. IJKL pans camera. Left click teleports. ESC exits.");
     }
 
     protected override void OnUpdate(SindriTime time)
@@ -80,5 +93,22 @@ internal sealed class SandboxScene : Scene2D
     protected override void OnExit()
     {
         Console.WriteLine("Sandbox scene exited.");
+    }
+
+    private Entity AddWorldMarker(string name, float x, float y, ColorRGBA color)
+    {
+        var marker = CreateEntity(name);
+
+        marker.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(x, y)
+        });
+
+        marker.AddComponent(new RectangleRenderer2D(64f, 64f, color)
+        {
+            ClampToViewport = false
+        });
+
+        return marker;
     }
 }

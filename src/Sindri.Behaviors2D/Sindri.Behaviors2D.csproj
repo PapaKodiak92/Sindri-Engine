@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Sindri.Core\Sindri.Core.csproj" />
     <ProjectReference Include="..\Sindri.Input\Sindri.Input.csproj" />
+    <ProjectReference Include="..\Sindri.Renderer2D\Sindri.Renderer2D.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

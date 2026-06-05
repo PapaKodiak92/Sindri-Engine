@@ -1,4 +1,5 @@
-﻿using Sindri.Graphics;
+﻿using Sindri.Core.Math;
+using Sindri.Graphics;
 using Sindri.Platform.Windows.Native;
 
 namespace Sindri.Platform.Windows.Graphics;
@@ -11,6 +12,8 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
     {
         _hwnd = hwnd;
     }
+
+    public Vector2F DrawOffset { get; set; } = Vector2F.Zero;
 
     public Size2D ViewportSize
     {
@@ -29,11 +32,16 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
     public void Clear(ColorRGBA color)
     {
+        var oldOffset = DrawOffset;
+        DrawOffset = Vector2F.Zero;
+
         var viewport = ViewportSize;
 
         FillRectangle(
             new Rect2D(0, 0, viewport.Width, viewport.Height),
             color);
+
+        DrawOffset = oldOffset;
     }
 
     public void FillRectangle(Rect2D rect, ColorRGBA color)
@@ -47,12 +55,15 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
         try
         {
+            var x = rect.X + DrawOffset.X;
+            var y = rect.Y + DrawOffset.Y;
+
             var nativeRect = new Win32.RECT
             {
-                Left = (int)MathF.Round(rect.X),
-                Top = (int)MathF.Round(rect.Y),
-                Right = (int)MathF.Round(rect.X + rect.Width),
-                Bottom = (int)MathF.Round(rect.Y + rect.Height)
+                Left = (int)MathF.Round(x),
+                Top = (int)MathF.Round(y),
+                Right = (int)MathF.Round(x + rect.Width),
+                Bottom = (int)MathF.Round(y + rect.Height)
             };
 
             var brush = Win32.CreateSolidBrush(ToColorRef(color));

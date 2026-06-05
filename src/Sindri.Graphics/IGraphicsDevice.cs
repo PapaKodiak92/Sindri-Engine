@@ -1,8 +1,12 @@
-﻿namespace Sindri.Graphics;
+﻿using Sindri.Core.Math;
+
+namespace Sindri.Graphics;
 
 public interface IGraphicsDevice
 {
     Size2D ViewportSize { get; }
+
+    Vector2F DrawOffset { get; set; }
 
     void Clear(ColorRGBA color);
 

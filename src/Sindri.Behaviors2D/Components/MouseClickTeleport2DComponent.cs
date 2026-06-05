@@ -2,6 +2,7 @@
 using Sindri.Core.Entities;
 using Sindri.Core.Math;
 using Sindri.Input;
+using Sindri.Renderer2D.Components;
 
 namespace Sindri.Behaviors2D.Components;
 
@@ -15,6 +16,8 @@ public sealed class MouseClickTeleport2DComponent : Component
     }
 
     public MouseButton Button { get; set; } = MouseButton.Left;
+
+    public Camera2D? Camera { get; set; }
 
     public Vector2F OriginOffset { get; set; } = Vector2F.Zero;
 
@@ -39,7 +42,10 @@ public sealed class MouseClickTeleport2DComponent : Component
         var transform = Entity.GetRequiredComponent<Transform2D>();
         var mousePosition = _mouse.Position;
 
-        var target = new Vector2F(mousePosition.X, mousePosition.Y) + OriginOffset;
+        var screenPosition = new Vector2F(mousePosition.X, mousePosition.Y);
+        var target = Camera?.ScreenToWorld(screenPosition) ?? screenPosition;
+
+        target += OriginOffset;
 
         if (CenterOnMouse)
         {
