@@ -22,6 +22,11 @@ internal sealed class SandboxScene : Scene2D
     private const string SaveMapAction = "SaveMap";
     private const string LoadMapAction = "LoadMap";
 
+    private const string MoveLeftAction = "MoveLeft";
+    private const string MoveRightAction = "MoveRight";
+    private const string MoveUpAction = "MoveUp";
+    private const string MoveDownAction = "MoveDown";
+
     private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
@@ -175,7 +180,18 @@ internal sealed class SandboxScene : Scene2D
             Context?.RequestExit();
         };
 
-        player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
+        if (_actions is null)
+        {
+            throw new InvalidOperationException("Input actions were not initialized.");
+        }
+
+        player.AddComponent(new ActionMove2DComponent(_actions, PlayerSpeed)
+        {
+            MoveLeftAction = MoveLeftAction,
+            MoveRightAction = MoveRightAction,
+            MoveUpAction = MoveUpAction,
+            MoveDownAction = MoveDownAction
+        });
 
         player.AddComponent(new TileMapCollision2DComponent(mapInfo.Map)
         {
@@ -577,6 +593,18 @@ internal sealed class SandboxScene : Scene2D
         actions.BindKey(FireAction, Key.Space);
         actions.BindKey(SaveMapAction, Key.P);
         actions.BindKey(LoadMapAction, Key.O);
+
+        actions.BindKey(MoveLeftAction, Key.A);
+        actions.BindKey(MoveLeftAction, Key.Left);
+
+        actions.BindKey(MoveRightAction, Key.D);
+        actions.BindKey(MoveRightAction, Key.Right);
+
+        actions.BindKey(MoveUpAction, Key.W);
+        actions.BindKey(MoveUpAction, Key.Up);
+
+        actions.BindKey(MoveDownAction, Key.S);
+        actions.BindKey(MoveDownAction, Key.Down);
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
