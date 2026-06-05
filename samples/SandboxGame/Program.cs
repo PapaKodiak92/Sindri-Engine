@@ -81,6 +81,8 @@ internal sealed class SandboxScene : Scene2D
             FollowStrength = 1f
         });
 
+        cameraEntity.AddComponent(new CameraBounds2DComponent(mapInfo.WorldBounds));
+
         player.AddComponent(new MouseClickTeleport2DComponent(mouse)
         {
             Button = MouseButton.Left,
@@ -91,7 +93,7 @@ internal sealed class SandboxScene : Scene2D
         });
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Camera follows. Left click teleports. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Camera follows and clamps to map. Left click teleports. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid.");
     }
 
@@ -162,6 +164,12 @@ internal sealed class SandboxScene : Scene2D
             -width * tileSize / 2f,
             -height * tileSize / 2f);
 
+        var worldBounds = new Rect2D(
+            worldPosition.X,
+            worldPosition.Y,
+            width * tileSize,
+            height * tileSize);
+
         var mapEntity = CreateEntity("Test Tilemap");
 
         mapEntity.AddComponent(new Transform2D
@@ -171,8 +179,8 @@ internal sealed class SandboxScene : Scene2D
 
         mapEntity.AddComponent(new TileMapRenderer2D(map));
 
-        return new TileMapInfo(map, worldPosition);
+        return new TileMapInfo(map, worldPosition, worldBounds);
     }
 
-    private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition);
+    private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
 }
