@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/SandboxGame/SandboxGame.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Sindri.Core/Sindri.Core.csproj" />
+  </Folder>
+</Solution>
