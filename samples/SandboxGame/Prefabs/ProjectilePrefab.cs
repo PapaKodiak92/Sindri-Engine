@@ -2,18 +2,21 @@
 using Sindri.Core.Entities;
 using Sindri.Core.Math;
 using Sindri.Core.Prefabs;
+using Sindri.Core.Scenes;
 using Sindri.Graphics;
 using Sindri.Physics2D.Components;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Tilemaps;
 
 internal sealed record ProjectilePrefabConfig(
+    Scene TriggerScene,
     string Name,
     float X,
     float Y,
     Vector2F Velocity,
     TileMap2D TileMap,
-    Vector2F MapWorldPosition);
+    Vector2F MapWorldPosition,
+    int Damage);
 
 internal sealed class ProjectilePrefab : IPrefab<ProjectilePrefabConfig>
 {
@@ -29,11 +32,24 @@ internal sealed class ProjectilePrefab : IPrefab<ProjectilePrefabConfig>
             Position = new Vector2F(config.X, config.Y)
         });
 
-        projectile.AddComponent(new BoxCollider2D(projectileSize, projectileSize));
+        projectile.AddComponent(new BoxCollider2D(projectileSize, projectileSize)
+        {
+            IsTrigger = true
+        });
 
         projectile.AddComponent(new Velocity2DComponent
         {
             Velocity = config.Velocity
+        });
+
+        var trigger = projectile.AddComponent(new Trigger2DComponent(config.TriggerScene)
+        {
+            TargetTag = "Damageable"
+        });
+
+        projectile.AddComponent(new DamageOnTrigger2DComponent(trigger, config.Damage)
+        {
+            DestroySelfAfterHit = true
         });
 
         projectile.AddComponent(new DestroyOnSolidTile2DComponent(config.TileMap)

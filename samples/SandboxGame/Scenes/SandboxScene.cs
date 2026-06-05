@@ -2,13 +2,13 @@
 using Sindri.Core;
 using Sindri.Core.Entities;
 using Sindri.Core.Math;
+using Sindri.Core.Prefabs;
 using Sindri.Graphics;
 using Sindri.Input;
 using Sindri.Physics2D.Components;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Scenes;
 using Sindri.Renderer2D.Tilemaps;
-using Sindri.Core.Prefabs;
 
 internal sealed class SandboxScene : Scene2D
 {
@@ -17,7 +17,14 @@ internal sealed class SandboxScene : Scene2D
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
 
+    private readonly PickupPrefab _pickupPrefab = new();
+    private readonly TriggerZonePrefab _triggerZonePrefab = new();
+    private readonly ProjectilePrefab _projectilePrefab = new();
+    private readonly TargetDummyPrefab _targetDummyPrefab = new();
+
+    private PrefabSpawner? _prefabSpawner;
     private IInputDevice? _keyboard;
+    private IMouseDevice? _mouse;
     private TileMap2D? _map;
     private TileHover2DComponent? _tileHover;
     private Transform2D? _playerTransform;
@@ -27,21 +34,14 @@ internal sealed class SandboxScene : Scene2D
     private int _collectedPickups;
     private int _totalPickups;
     private bool _isInTriggerZone;
-
-    private readonly PickupPrefab _pickupPrefab = new();
-    private readonly TriggerZonePrefab _triggerZonePrefab = new();
-    private PrefabSpawner? _prefabSpawner;
-
-    private readonly ProjectilePrefab _projectilePrefab = new();
-    private IMouseDevice? _mouse;
     private int _projectileCount;
+    private int _destroyedDummies;
+    private int _totalDummies;
 
     protected override void OnEnter(SceneContext context)
     {
         _keyboard = context.Services.GetRequiredService<IInputDevice>();
         _mouse = context.Services.GetRequiredService<IMouseDevice>();
-        var mouse = _mouse;
-
         _prefabSpawner = new PrefabSpawner(this);
 
         BackgroundColor = ColorRGBA.Black;
@@ -49,12 +49,11 @@ internal sealed class SandboxScene : Scene2D
         var mapInfo = CreateTileMap();
         _map = mapInfo.Map;
 
-        var player = CreatePlayer(mapInfo, mouse);
+        var player = CreatePlayer(mapInfo);
         var playerTransform = player.GetRequiredComponent<Transform2D>();
 
         CreateCamera(playerTransform, mapInfo.WorldBounds);
-
-        CreateTileHover(mapInfo, mouse);
+        CreateTileHover(mapInfo, _mouse);
 
         AddPickup("Pickup A", -260f, -140f);
         AddPickup("Pickup B", 220f, 180f);
@@ -62,6 +61,10 @@ internal sealed class SandboxScene : Scene2D
         AddPickup("Pickup D", -800f, 420f);
 
         AddTriggerZone("Test Trigger Zone", 420f, 320f);
+
+        AddTargetDummy("Dummy A", 360f, -180f);
+        AddTargetDummy("Dummy B", 720f, 240f);
+        AddTargetDummy("Dummy C", -620f, -360f);
 
         CreateDebugOverlay();
 
@@ -116,7 +119,7 @@ internal sealed class SandboxScene : Scene2D
         Console.WriteLine("Sandbox scene exited.");
     }
 
-    private Entity CreatePlayer(TileMapInfo mapInfo, IMouseDevice mouse)
+    private Entity CreatePlayer(TileMapInfo mapInfo)
     {
         if (_keyboard is null)
         {
@@ -257,7 +260,8 @@ internal sealed class SandboxScene : Scene2D
             tileText +
             $" | Pickups {_collectedPickups}/{_totalPickups}" +
             $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
-            $" | Shots {_projectileCount}";
+            $" | Shots {_projectileCount}" +
+            $" | Dummies {_destroyedDummies}/{_totalDummies}";
     }
 
     private void AddPickup(string name, float x, float y)
@@ -307,6 +311,78 @@ internal sealed class SandboxScene : Scene2D
                     _isInTriggerZone = false;
                     Console.WriteLine("Exited trigger zone.");
                 }));
+    }
+
+    private void AddTargetDummy(string name, float x, float y)
+    {
+        if (_prefabSpawner is null)
+        {
+            throw new InvalidOperationException("Prefab spawner was not initialized.");
+        }
+
+        _prefabSpawner.Spawn(
+            _targetDummyPrefab,
+            new TargetDummyPrefabConfig(
+                Name: name,
+                X: x,
+                Y: y,
+                OnDied: () =>
+                {
+                    _destroyedDummies++;
+                }));
+
+        _totalDummies++;
+    }
+
+    private void FireProjectileTowardMouse()
+    {
+        if (_prefabSpawner is null || _playerTransform is null || _mouse is null || ActiveCamera is null || _map is null)
+        {
+            return;
+        }
+
+        var mouseScreen = new Vector2F(_mouse.Position.X, _mouse.Position.Y);
+        var mouseWorld = ActiveCamera.ScreenToWorld(mouseScreen);
+
+        var playerCenter = _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f);
+        var direction = (mouseWorld - playerCenter).Normalized();
+
+        if (direction == Vector2F.Zero)
+        {
+            return;
+        }
+
+        const float projectileSpeed = 720f;
+        const float projectileSpawnOffset = 34f;
+
+        var spawnPosition = playerCenter + direction * projectileSpawnOffset;
+
+        _projectileCount++;
+
+        _prefabSpawner.Spawn(
+            _projectilePrefab,
+            new ProjectilePrefabConfig(
+                TriggerScene: this,
+                Name: $"Projectile {_projectileCount}",
+                X: spawnPosition.X,
+                Y: spawnPosition.Y,
+                Velocity: direction * projectileSpeed,
+                TileMap: _map,
+                MapWorldPosition: GetCurrentMapWorldPosition(),
+                Damage: 1));
+    }
+
+    private Vector2F GetCurrentMapWorldPosition()
+    {
+        foreach (var entity in GetActiveEntities())
+        {
+            if (entity.Name == "Test Tilemap")
+            {
+                return entity.GetRequiredComponent<Transform2D>().Position;
+            }
+        }
+
+        return Vector2F.Zero;
     }
 
     private TileMapInfo CreateTileMap()
@@ -385,53 +461,4 @@ internal sealed class SandboxScene : Scene2D
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
-
-    private void FireProjectileTowardMouse()
-    {
-        if (_prefabSpawner is null || _playerTransform is null || _mouse is null || ActiveCamera is null || _map is null)
-        {
-            return;
-        }
-
-        var mouseScreen = new Vector2F(_mouse.Position.X, _mouse.Position.Y);
-        var mouseWorld = ActiveCamera.ScreenToWorld(mouseScreen);
-
-        var playerCenter = _playerTransform.Position + new Vector2F(PlayerSize / 2f, PlayerSize / 2f);
-        var direction = (mouseWorld - playerCenter).Normalized();
-
-        if (direction == Vector2F.Zero)
-        {
-            return;
-        }
-
-        const float projectileSpeed = 720f;
-        const float projectileSpawnOffset = 34f;
-
-        var spawnPosition = playerCenter + direction * projectileSpawnOffset;
-
-        _projectileCount++;
-
-        _prefabSpawner.Spawn(
-            _projectilePrefab,
-            new ProjectilePrefabConfig(
-                Name: $"Projectile {_projectileCount}",
-                X: spawnPosition.X,
-                Y: spawnPosition.Y,
-                Velocity: direction * projectileSpeed,
-                TileMap: _map,
-                MapWorldPosition: GetCurrentMapWorldPosition()));
-    }
-    
-    private Vector2F GetCurrentMapWorldPosition()
-    {
-        foreach (var entity in GetActiveEntities())
-        {
-            if (entity.Name == "Test Tilemap")
-            {
-                return entity.GetRequiredComponent<Transform2D>().Position;
-            }
-        }
-
-        return Vector2F.Zero;
-    }
 }
