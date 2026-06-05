@@ -33,6 +33,8 @@ internal sealed class SandboxScene : Scene2D
 
     private const string RestartAction = "Restart";
 
+    private const string PauseAction = "Pause";
+
     private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
@@ -47,7 +49,9 @@ internal sealed class SandboxScene : Scene2D
     private Transform2D? _cameraTransform;
     private TextRenderer2D? _debugText;
     private InputActionMap? _actions;
-
+    private Entity? _pauseOverlay;
+    
+    private bool _isPaused;
     private int _collectedPickups;
     private int _totalPickups;
     private bool _isInTriggerZone;
@@ -99,8 +103,10 @@ internal sealed class SandboxScene : Scene2D
 
         CreateDebugOverlay();
 
+        CreatePauseOverlay();
+
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Hold Space fires. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Hold Space fires. Tab pauses. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
@@ -110,6 +116,18 @@ internal sealed class SandboxScene : Scene2D
         {
             Context?.RequestExit();
             return;
+        }
+
+        if (_actions?.WasPressed(PauseAction) == true)
+        {
+            _isPaused = !_isPaused;
+
+            if (_pauseOverlay is not null)
+            {
+                _pauseOverlay.IsActive = _isPaused;
+            }
+
+            Console.WriteLine(_isPaused ? "Paused." : "Unpaused.");
         }
 
         if (_actions?.WasPressed(SaveMapAction) == true && _map is not null)
@@ -134,14 +152,14 @@ internal sealed class SandboxScene : Scene2D
 
         _fireCooldown.Update(time);
 
-        if (_actions?.IsDown(FireAction) == true && _fireCooldown.TryUse())
+        if (!_isPaused && _actions?.IsDown(FireAction) == true && _fireCooldown.TryUse())
         {
             FireProjectileTowardMouse();
         }
 
         UpdateDebugText();
 
-        if (_tileHover?.WasTileClicked == true)
+        if (!_isPaused && _tileHover?.WasTileClicked == true)
         {
             Console.WriteLine($"Clicked tile {_tileHover.ClickedTileX}, {_tileHover.ClickedTileY}");
         }
@@ -185,7 +203,7 @@ internal sealed class SandboxScene : Scene2D
             Console.WriteLine("Player died.");
             Context?.ChangeScene(new GameOverScene());
         };
-        
+
         if (_actions is null)
         {
             throw new InvalidOperationException("Input actions were not initialized.");
@@ -616,6 +634,12 @@ internal sealed class SandboxScene : Scene2D
                 changed = true;
             }
 
+            if (!actions.HasAction(PauseAction))
+            {
+                actions.BindKey(PauseAction, Key.Tab);
+                changed = true;
+            }
+
             if (changed)
             {
                 actions.Save(InputBindingsPath);
@@ -657,6 +681,31 @@ internal sealed class SandboxScene : Scene2D
 
         actions.BindMouseButton(TeleportPlayerAction, MouseButton.Left);
         actions.BindMouseButton(PaintTileAction, MouseButton.Right);
+
+        actions.BindKey(PauseAction, Key.Tab);
+    }
+
+    private void CreatePauseOverlay()
+    {
+        _pauseOverlay = CreateEntity("Pause Overlay");
+
+        _pauseOverlay.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(500f, 360f)
+        });
+
+        _pauseOverlay.AddComponent(new TextRenderer2D("PAUSED - Press Tab to resume", ColorRGBA.White)
+        {
+            RenderSpace = RenderSpace.Screen,
+            RenderLayer = 20_000
+        });
+
+        _pauseOverlay.IsActive = false;
+    }
+
+    protected override bool ShouldUpdateEntities(SindriTime time)
+    {
+        return !_isPaused;
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);

@@ -20,16 +20,19 @@ public abstract class Scene : IScene, IEntitySpawner
     {
         OnUpdate(time);
 
-        var snapshot = _entities.ToArray();
-
-        foreach (var entity in snapshot)
+        if (ShouldUpdateEntities(time))
         {
-            if (entity.IsDestroyed)
-            {
-                continue;
-            }
+            var snapshot = _entities.ToArray();
 
-            entity.Update(time);
+            foreach (var entity in snapshot)
+            {
+                if (entity.IsDestroyed)
+                {
+                    continue;
+                }
+
+                entity.Update(time);
+            }
         }
 
         RemoveDestroyedEntities();
@@ -107,6 +110,11 @@ public abstract class Scene : IScene, IEntitySpawner
     {
         ArgumentNullException.ThrowIfNull(entity);
         entity.Destroy();
+    }
+
+    protected virtual bool ShouldUpdateEntities(SindriTime time)
+    {
+        return true;
     }
 
     protected virtual void OnEnter(SceneContext context)
