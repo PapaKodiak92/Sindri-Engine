@@ -52,7 +52,8 @@ internal sealed class ProjectilePrefab : IPrefab<ProjectilePrefabConfig>
         projectile.AddComponent(new DamageOnTrigger2DComponent(trigger, config.Damage)
         {
             DestroySelfAfterHit = true,
-            MaxHits = 1
+            MaxHits = 1,
+            KnockbackDistance = 18f
         });
 
         projectile.AddComponent(new DestroyOnSolidTile2DComponent(config.TileMap)

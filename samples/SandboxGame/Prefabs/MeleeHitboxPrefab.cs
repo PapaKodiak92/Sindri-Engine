@@ -44,7 +44,8 @@ internal sealed class MeleeHitboxPrefab : IPrefab<MeleeHitboxPrefabConfig>
         hitbox.AddComponent(new DamageOnTrigger2DComponent(trigger, config.Damage)
         {
             DestroySelfAfterHit = false,
-            MaxHits = 0
+            MaxHits = 0,
+            KnockbackDistance = 12f
         });
 
         hitbox.AddComponent(new DestroyAfterTimeComponent(config.LifetimeSeconds));

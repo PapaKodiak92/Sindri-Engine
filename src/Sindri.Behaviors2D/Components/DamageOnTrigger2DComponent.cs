@@ -1,5 +1,6 @@
 ﻿using Sindri.Core;
 using Sindri.Core.Entities;
+using Sindri.Core.Math;
 using Sindri.Physics2D.Components;
 
 namespace Sindri.Behaviors2D.Components;
@@ -26,6 +27,8 @@ public sealed class DamageOnTrigger2DComponent : Component
 
     // 0 means unlimited valid targets.
     public int MaxHits { get; set; } = 1;
+
+    public float KnockbackDistance { get; set; }
 
     public int HitCount => _hitCount;
 
@@ -72,10 +75,36 @@ public sealed class DamageOnTrigger2DComponent : Component
         _hitCount++;
 
         health.ApplyDamage(Damage);
+        ApplyKnockback(target);
 
         if (DestroySelfAfterHit && (MaxHits <= 0 || _hitCount >= MaxHits))
         {
             Entity.Destroy();
         }
+    }
+
+    private void ApplyKnockback(Entity target)
+    {
+        if (Entity is null || KnockbackDistance <= 0f)
+        {
+            return;
+        }
+
+        var sourceTransform = Entity.GetComponent<Transform2D>();
+        var targetTransform = target.GetComponent<Transform2D>();
+
+        if (sourceTransform is null || targetTransform is null)
+        {
+            return;
+        }
+
+        var direction = (targetTransform.Position - sourceTransform.Position).Normalized();
+
+        if (direction == Vector2F.Zero)
+        {
+            direction = new Vector2F(1f, 0f);
+        }
+
+        targetTransform.Position += direction * KnockbackDistance;
     }
 }
