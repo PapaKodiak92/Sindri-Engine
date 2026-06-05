@@ -22,17 +22,7 @@ public abstract class Scene : IScene, IEntitySpawner
 
         if (ShouldUpdateEntities(time))
         {
-            var snapshot = _entities.ToArray();
-
-            foreach (var entity in snapshot)
-            {
-                if (entity.IsDestroyed)
-                {
-                    continue;
-                }
-
-                entity.Update(time);
-            }
+            UpdateComponents(time);
         }
 
         RemoveDestroyedEntities();
@@ -127,6 +117,38 @@ public abstract class Scene : IScene, IEntitySpawner
 
     protected virtual void OnExit()
     {
+    }
+
+    private void UpdateComponents(SindriTime time)
+    {
+        var componentSnapshot = new List<Component>();
+
+        foreach (var entity in GetActiveEntities())
+        {
+            foreach (var component in entity.Components)
+            {
+                if (component.Entity == entity)
+                {
+                    componentSnapshot.Add(component);
+                }
+            }
+        }
+
+        var orderedComponents = componentSnapshot
+            .OrderBy(component => component.UpdateOrder)
+            .ToArray();
+
+        foreach (var component in orderedComponents)
+        {
+            var entity = component.Entity;
+
+            if (entity is null || entity.IsDestroyed || !entity.IsActive)
+            {
+                continue;
+            }
+
+            component.Update(time);
+        }
     }
 
     private void RemoveDestroyedEntities()
