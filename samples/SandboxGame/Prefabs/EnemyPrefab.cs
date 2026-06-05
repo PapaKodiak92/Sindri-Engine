@@ -2,12 +2,14 @@
 using Sindri.Core.Entities;
 using Sindri.Core.Math;
 using Sindri.Core.Prefabs;
+using Sindri.Core.Scenes;
 using Sindri.Graphics;
 using Sindri.Physics2D.Components;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Tilemaps;
 
 internal sealed record EnemyPrefabConfig(
+    Scene TriggerScene,
     string Name,
     float X,
     float Y,
@@ -45,6 +47,16 @@ internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
             MapWorldPosition = config.MapWorldPosition,
             UseAxisSeparation = true,
             MaxAxisResolveDistance = enemySize * 2f
+        });
+
+        var contactTrigger = enemy.AddComponent(new Trigger2DComponent(config.TriggerScene)
+        {
+            TargetTag = "Player"
+        });
+
+        enemy.AddComponent(new ContactDamage2DComponent(contactTrigger, damage: 1)
+        {
+            CooldownSeconds = 0.75f
         });
 
         var health = enemy.AddComponent(new Health2DComponent(maxHealth: 4)

@@ -42,6 +42,8 @@ internal sealed class SandboxScene : Scene2D
 
     private readonly EnemyPrefab _enemyPrefab = new();
 
+    private Health2DComponent? _playerHealth;
+
     protected override void OnEnter(SceneContext context)
     {
         _keyboard = context.Services.GetRequiredService<IInputDevice>();
@@ -77,7 +79,7 @@ internal sealed class SandboxScene : Scene2D
         CreateDebugOverlay();
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Space fires. Enemies chase. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Space fires. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
@@ -144,6 +146,22 @@ internal sealed class SandboxScene : Scene2D
 
         player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
 
+        _playerHealth = player.AddComponent(new Health2DComponent(maxHealth: 10)
+        {
+            DestroyEntityOnDeath = false
+        });
+
+        _playerHealth.Damaged += (_, amount) =>
+        {
+            Console.WriteLine($"Player took {amount} damage. HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}");
+        };
+
+        _playerHealth.Died += _ =>
+        {
+            Console.WriteLine("Player died.");
+            Context?.RequestExit();
+        };
+
         player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
 
         player.AddComponent(new TileMapCollision2DComponent(mapInfo.Map)
@@ -161,11 +179,25 @@ internal sealed class SandboxScene : Scene2D
             RenderOrder = 0
         });
 
-        player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold)
+        var bodyRenderer = player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold)
         {
             ClampToViewport = false,
             RenderLayer = 10,
             RenderOrder = 0
+        });
+
+        player.AddComponent(new DamageFlash2DComponent(_playerHealth, bodyRenderer)
+        {
+            FlashColor = ColorRGBA.White,
+            FlashDurationSeconds = 0.12f
+        });
+
+        player.AddComponent(new HealthBar2DRenderer(_playerHealth)
+        {
+            Width = PlayerSize,
+            Height = 6f,
+            Offset = new Vector2F(0f, -12f),
+            RenderLayer = 30
         });
 
         return player;
@@ -262,8 +294,13 @@ internal sealed class SandboxScene : Scene2D
             tileText = $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY} {solidText}";
         }
 
+        var hpText = _playerHealth is null
+            ? "HP none"
+            : $"HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}";
+
         _debugText.Text =
             $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
+            $"{hpText} | " +
             $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}" +
             tileText +
             $" | Pickups {_collectedPickups}/{_totalPickups}" +
@@ -479,6 +516,7 @@ internal sealed class SandboxScene : Scene2D
         _prefabSpawner.Spawn(
             _enemyPrefab,
             new EnemyPrefabConfig(
+                TriggerScene: this,
                 Name: name,
                 X: x,
                 Y: y,
