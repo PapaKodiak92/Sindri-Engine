@@ -42,6 +42,8 @@ internal sealed class SandboxScene : Scene2D
 
     private readonly EnemyPrefab _enemyPrefab = new();
 
+    private readonly CooldownTimer _fireCooldown = new(0.18f);
+
     private Health2DComponent? _playerHealth;
 
     protected override void OnEnter(SceneContext context)
@@ -79,7 +81,7 @@ internal sealed class SandboxScene : Scene2D
         CreateDebugOverlay();
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Space fires. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Hold Space fires. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
@@ -111,7 +113,9 @@ internal sealed class SandboxScene : Scene2D
             }
         }
 
-        if (_keyboard?.WasKeyPressed(Key.Space) == true)
+        _fireCooldown.Update(time);
+
+        if (_keyboard?.IsKeyDown(Key.Space) == true && _fireCooldown.TryUse())
         {
             FireProjectileTowardMouse();
         }
