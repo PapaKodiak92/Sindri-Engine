@@ -19,6 +19,8 @@ public sealed class RectangleRenderer2D : RenderComponent
 
     public ColorRGBA Color { get; set; }
 
+    public Vector2F Offset { get; set; } = Vector2F.Zero;
+
     public bool ClampToViewport { get; set; } = true;
 
     public override void Render(IGraphicsDevice graphics)
@@ -29,7 +31,7 @@ public sealed class RectangleRenderer2D : RenderComponent
         }
 
         var transform = Entity.GetRequiredComponent<Transform2D>();
-        var position = transform.Position;
+        var position = transform.Position + Offset;
 
         if (ClampToViewport)
         {
@@ -39,7 +41,7 @@ public sealed class RectangleRenderer2D : RenderComponent
                 X: Math.Clamp(position.X, 0f, Math.Max(0f, viewport.Width - Width)),
                 Y: Math.Clamp(position.Y, 0f, Math.Max(0f, viewport.Height - Height)));
 
-            transform.Position = position;
+            transform.Position = position - Offset;
         }
 
         graphics.FillRectangle(

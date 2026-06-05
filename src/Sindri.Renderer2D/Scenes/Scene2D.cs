@@ -25,6 +25,8 @@ public abstract class Scene2D : Scene, IRenderableScene
             graphics.DrawOffset = ActiveCamera.GetDrawOffset();
         }
 
+        var renderers = new List<RenderComponent>();
+
         foreach (var entity in Entities)
         {
             if (!entity.IsActive)
@@ -34,8 +36,25 @@ public abstract class Scene2D : Scene, IRenderableScene
 
             foreach (var renderer in entity.GetComponents<RenderComponent>())
             {
-                renderer.Render(graphics);
+                renderers.Add(renderer);
             }
+        }
+
+        renderers.Sort(static (left, right) =>
+        {
+            var layerCompare = left.RenderLayer.CompareTo(right.RenderLayer);
+
+            if (layerCompare != 0)
+            {
+                return layerCompare;
+            }
+
+            return left.RenderOrder.CompareTo(right.RenderOrder);
+        });
+
+        foreach (var renderer in renderers)
+        {
+            renderer.Render(graphics);
         }
 
         graphics.DrawOffset = Vector2F.Zero;

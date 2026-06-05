@@ -61,9 +61,19 @@ internal sealed class SandboxScene : Scene2D
             MapWorldPosition = mapInfo.WorldPosition
         });
 
+        player.AddComponent(new RectangleRenderer2D(PlayerSize, 12f, new ColorRGBA(8, 10, 14))
+        {
+            Offset = new Vector2F(0f, PlayerSize - 4f),
+            ClampToViewport = false,
+            RenderLayer = 5,
+            RenderOrder = 0
+        });
+
         player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold)
         {
-            ClampToViewport = false
+            ClampToViewport = false,
+            RenderLayer = 10,
+            RenderOrder = 0
         });
 
         var cameraEntity = CreateEntity("Camera");
@@ -177,7 +187,10 @@ internal sealed class SandboxScene : Scene2D
             Position = worldPosition
         });
 
-        mapEntity.AddComponent(new TileMapRenderer2D(map));
+        mapEntity.AddComponent(new TileMapRenderer2D(map)
+        {
+            RenderLayer = -100
+        });
 
         return new TileMapInfo(map, worldPosition, worldBounds);
     }
