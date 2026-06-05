@@ -27,6 +27,9 @@ internal sealed class SandboxScene : Scene2D
     private const string MoveUpAction = "MoveUp";
     private const string MoveDownAction = "MoveDown";
 
+    private const string TeleportPlayerAction = "TeleportPlayer";
+    private const string PaintTileAction = "PaintTile";
+
     private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
@@ -266,9 +269,14 @@ internal sealed class SandboxScene : Scene2D
             MapWorldPosition = mapInfo.WorldPosition
         });
 
-        hoverEntity.AddComponent(new TilePaint2DComponent(mapInfo.Map, _tileHover, mouse)
+        if (_actions is null)
         {
-            PaintButton = MouseButton.Right,
+            throw new InvalidOperationException("Input actions were not initialized.");
+        }
+
+        hoverEntity.AddComponent(new ActionTilePaint2DComponent(mapInfo.Map, _tileHover, _actions)
+        {
+            PaintAction = PaintTileAction,
             SolidColor = ColorRGBA.SindriRed
         });
 
@@ -280,9 +288,9 @@ internal sealed class SandboxScene : Scene2D
         var player = _playerTransform.Entity
             ?? throw new InvalidOperationException("Player entity was not attached.");
 
-        player.AddComponent(new MouseClickTeleport2DComponent(mouse)
+        player.AddComponent(new ActionMouseClickTeleport2DComponent(_actions, mouse)
         {
-            Button = MouseButton.Left,
+            ActionName = TeleportPlayerAction,
             Camera = ActiveCamera,
             CenterOnMouse = true,
             CenterWidth = PlayerSize,
@@ -605,6 +613,9 @@ internal sealed class SandboxScene : Scene2D
 
         actions.BindKey(MoveDownAction, Key.S);
         actions.BindKey(MoveDownAction, Key.Down);
+
+        actions.BindMouseButton(TeleportPlayerAction, MouseButton.Left);
+        actions.BindMouseButton(PaintTileAction, MouseButton.Right);
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);

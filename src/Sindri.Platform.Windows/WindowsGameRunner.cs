@@ -19,8 +19,10 @@ public static class WindowsGameRunner
         var engine = new EngineHost(game);
 
         var keyboard = new WindowsKeyboardInput();
+        var actions = new InputActionMap(keyboard);
+
         engine.Services.Register<IInputDevice>(keyboard);
-        engine.Services.Register(new InputActionMap(keyboard));
+        engine.Services.Register(actions);
 
         engine.Configure();
         var config = engine.Config;
@@ -33,6 +35,8 @@ public static class WindowsGameRunner
         var graphics = new WindowsGdiGraphicsDevice(window.Handle);
 
         var mouse = new WindowsMouseInput(window.Handle);
+        actions.SetMouseDevice(mouse);
+
         engine.Services.Register<IMouseDevice>(mouse);
 
         engine.Initialize();
