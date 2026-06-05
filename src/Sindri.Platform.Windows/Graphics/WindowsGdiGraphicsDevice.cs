@@ -29,6 +29,15 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
     public void Clear(ColorRGBA color)
     {
+        var viewport = ViewportSize;
+
+        FillRectangle(
+            new Rect2D(0, 0, viewport.Width, viewport.Height),
+            color);
+    }
+
+    public void FillRectangle(Rect2D rect, ColorRGBA color)
+    {
         var hdc = Win32.GetDC(_hwnd);
 
         if (hdc == nint.Zero)
@@ -38,10 +47,13 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
         try
         {
-            if (!Win32.GetClientRect(_hwnd, out var rect))
+            var nativeRect = new Win32.RECT
             {
-                return;
-            }
+                Left = (int)MathF.Round(rect.X),
+                Top = (int)MathF.Round(rect.Y),
+                Right = (int)MathF.Round(rect.X + rect.Width),
+                Bottom = (int)MathF.Round(rect.Y + rect.Height)
+            };
 
             var brush = Win32.CreateSolidBrush(ToColorRef(color));
 
@@ -52,7 +64,7 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
             try
             {
-                Win32.FillRect(hdc, ref rect, brush);
+                Win32.FillRect(hdc, ref nativeRect, brush);
             }
             finally
             {
