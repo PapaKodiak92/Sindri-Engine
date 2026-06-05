@@ -16,13 +16,15 @@ internal sealed record ProjectilePrefabConfig(
     Vector2F Velocity,
     TileMap2D TileMap,
     Vector2F MapWorldPosition,
-    int Damage);
+    int Damage,
+    float Size,
+    ColorRGBA Color);
 
 internal sealed class ProjectilePrefab : IPrefab<ProjectilePrefabConfig>
 {
     public Entity Create(IEntitySpawner spawner, ProjectilePrefabConfig config)
     {
-        const float projectileSize = 12f;
+        var projectileSize = System.MathF.Max(2f, config.Size);
 
         var projectile = spawner.SpawnEntity(config.Name);
         projectile.AddTag("Projectile");
@@ -64,7 +66,7 @@ internal sealed class ProjectilePrefab : IPrefab<ProjectilePrefabConfig>
         projectile.AddComponent(new RectangleRenderer2D(
             projectileSize,
             projectileSize,
-            ColorRGBA.White)
+            config.Color)
         {
             ClampToViewport = false,
             RenderLayer = 20

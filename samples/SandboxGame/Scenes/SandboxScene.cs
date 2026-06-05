@@ -34,6 +34,10 @@ internal sealed class SandboxScene : Scene2D
 
     private const string ZoomInAction = "ZoomIn";
     private const string ZoomOutAction = "ZoomOut";
+
+    private const string CycleWeaponAction = "CycleWeapon";
+
+
 private readonly PickupPrefab _pickupPrefab = new();
     private readonly TriggerZonePrefab _triggerZonePrefab = new();
     private readonly ProjectilePrefab _projectilePrefab = new();
@@ -108,7 +112,7 @@ private int _destroyedDummies;
         AddDebugColliderRenderersToExistingEntities();
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Hold Space fires. Q/E zooms camera. Tab pauses. F toggles colliders. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Hold Space fires. R cycles weapons. Q/E zooms camera. Tab pauses. F toggles colliders. Enemies damage on contact. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
@@ -329,20 +333,47 @@ private int _destroyedDummies;
             _projectilePrefab,
             _map,
             GetCurrentMapWorldPosition,
-            onFired: spawnPosition =>
+            onFired: (spawnPosition, weapon) =>
             {
-                SpawnParticleBurst(spawnPosition, ColorRGBA.SindriGold, count: 8, strength: 0.55f);
+                SpawnParticleBurst(spawnPosition, weapon.MuzzleColor, count: 8, strength: 0.55f);
                 AddDebugColliderRenderersToExistingEntities();
             })
         {
             FireAction = FireAction,
+            CycleWeaponAction = CycleWeaponAction,
             OwnerWidth = PlayerSize,
-            OwnerHeight = PlayerSize,
-            ProjectileSpeed = 720f,
-            ProjectileSpawnOffset = 34f,
-            FireCooldownSeconds = 0.18f,
-            Damage = 1
+            OwnerHeight = PlayerSize
         });
+
+        _playerWeapon.Weapons.Add(new Weapon2DDefinition(
+            Name: "Bow",
+            CooldownSeconds: 0.22f,
+            ProjectileSpeed: 720f,
+            ProjectileSpawnOffset: 34f,
+            Damage: 1,
+            ProjectileSize: 12f,
+            ProjectileColor: ColorRGBA.White,
+            MuzzleColor: ColorRGBA.SindriGold));
+
+        _playerWeapon.Weapons.Add(new Weapon2DDefinition(
+            Name: "Crossbow",
+            CooldownSeconds: 0.55f,
+            ProjectileSpeed: 980f,
+            ProjectileSpawnOffset: 36f,
+            Damage: 2,
+            ProjectileSize: 14f,
+            ProjectileColor: ColorRGBA.SindriCyan,
+            MuzzleColor: ColorRGBA.SindriCyan));
+
+        _playerWeapon.Weapons.Add(new Weapon2DDefinition(
+            Name: "Throwing Dagger",
+            CooldownSeconds: 0.12f,
+            ProjectileSpeed: 620f,
+            ProjectileSpawnOffset: 30f,
+            Damage: 1,
+            ProjectileSize: 8f,
+            ProjectileColor: ColorRGBA.SindriGold,
+            MuzzleColor: ColorRGBA.SindriGold));
     }
 
     private void CreateTileHover(TileMapInfo mapInfo, IMouseDevice mouse)
@@ -445,6 +476,7 @@ private int _destroyedDummies;
             tileText +
             $" | Pickups {_collectedPickups}/{_totalPickups}" +
             $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
+            $" | Weapon {(_playerWeapon?.CurrentWeaponName ?? "none")}" +
             $" | Shots {(_playerWeapon?.ShotsFired ?? 0)}" +
             $" | Dummies {_destroyedDummies}/{_totalDummies}" +
             $" | Enemies {_defeatedEnemies}/{_totalEnemies}" +
@@ -875,6 +907,12 @@ private int _destroyedDummies;
                 changed = true;
             }
 
+            if (!actions.HasAction(CycleWeaponAction))
+            {
+                actions.BindKey(CycleWeaponAction, Key.R);
+                changed = true;
+            }
+
             if (changed)
             {
                 actions.Save(InputBindingsPath);
@@ -923,6 +961,8 @@ private int _destroyedDummies;
 
         actions.BindKey(ZoomInAction, Key.E);
         actions.BindKey(ZoomOutAction, Key.Q);
+
+        actions.BindKey(CycleWeaponAction, Key.R);
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
