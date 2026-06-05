@@ -10,6 +10,7 @@ internal sealed record TargetDummyPrefabConfig(
     string Name,
     float X,
     float Y,
+    Action<int, Vector2F>? OnDamaged,
     Action? OnDied);
 
 internal sealed class TargetDummyPrefab : IPrefab<TargetDummyPrefabConfig>
@@ -21,7 +22,7 @@ internal sealed class TargetDummyPrefab : IPrefab<TargetDummyPrefabConfig>
         var dummy = spawner.SpawnEntity(config.Name);
         dummy.AddTag("Damageable");
 
-        dummy.AddComponent(new Transform2D
+        var transform = dummy.AddComponent(new Transform2D
         {
             Position = new Vector2F(config.X, config.Y)
         });
@@ -36,6 +37,7 @@ internal sealed class TargetDummyPrefab : IPrefab<TargetDummyPrefabConfig>
         health.Damaged += (_, amount) =>
         {
             Console.WriteLine($"{config.Name} took {amount} damage. HP {health.CurrentHealth}/{health.MaxHealth}");
+            config.OnDamaged?.Invoke(amount, transform.Position);
         };
 
         health.Died += _ =>

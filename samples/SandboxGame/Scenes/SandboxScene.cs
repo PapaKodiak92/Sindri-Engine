@@ -158,6 +158,7 @@ internal sealed class SandboxScene : Scene2D
         _playerHealth.Damaged += (_, amount) =>
         {
             Console.WriteLine($"Player took {amount} damage. HP {_playerHealth.CurrentHealth}/{_playerHealth.MaxHealth}");
+            SpawnFloatingText($"-{amount}", _playerTransform.Position + new Vector2F(8f, -18f), ColorRGBA.SindriRed);
         };
 
         _playerHealth.Died += _ =>
@@ -373,10 +374,14 @@ internal sealed class SandboxScene : Scene2D
         _prefabSpawner.Spawn(
             _targetDummyPrefab,
             new TargetDummyPrefabConfig(
-                Name: name,
-                X: x,
-                Y: y,
-                OnDied: () =>
+            Name: name,
+            X: x,
+            Y: y,
+            OnDamaged: (amount, position) =>
+            {
+                SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
+            },
+            OnDied: () =>
                 {
                     _destroyedDummies++;
                 }));
@@ -520,19 +525,40 @@ internal sealed class SandboxScene : Scene2D
         _prefabSpawner.Spawn(
             _enemyPrefab,
             new EnemyPrefabConfig(
-                TriggerScene: this,
-                Name: name,
-                X: x,
-                Y: y,
-                Target: _playerTransform,
-                TileMap: _map,
-                MapWorldPosition: GetCurrentMapWorldPosition(),
-                OnDied: () =>
+            TriggerScene: this,
+            Name: name,
+            X: x,
+            Y: y,
+            Target: _playerTransform,
+            TileMap: _map,
+            MapWorldPosition: GetCurrentMapWorldPosition(),
+            OnDamaged: (amount, position) =>
+            {
+                SpawnFloatingText($"-{amount}", position + new Vector2F(8f, -18f), ColorRGBA.White);
+            },
+            OnDied: () =>
                 {
                     _defeatedEnemies++;
                 }));
 
         _totalEnemies++;
+    }
+
+    private void SpawnFloatingText(string text, Vector2F position, ColorRGBA color)
+    {
+        var entity = CreateEntity($"Floating Text {text}");
+
+        entity.AddComponent(new Transform2D
+        {
+            Position = position
+        });
+
+        entity.AddComponent(new FloatingText2DComponent(text, color)
+        {
+            Velocity = new Vector2F(0f, -52f),
+            LifetimeSeconds = 0.75f,
+            RenderLayer = 10_000
+        });
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);

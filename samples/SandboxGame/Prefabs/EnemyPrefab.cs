@@ -16,6 +16,7 @@ internal sealed record EnemyPrefabConfig(
     Transform2D Target,
     TileMap2D TileMap,
     Vector2F MapWorldPosition,
+    Action<int, Vector2F>? OnDamaged,
     Action? OnDied);
 
 internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
@@ -29,7 +30,7 @@ internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
         enemy.AddTag("Enemy");
         enemy.AddTag("Damageable");
 
-        enemy.AddComponent(new Transform2D
+        var transform = enemy.AddComponent(new Transform2D
         {
             Position = new Vector2F(config.X, config.Y)
         });
@@ -67,6 +68,7 @@ internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
         health.Damaged += (_, amount) =>
         {
             Console.WriteLine($"{config.Name} took {amount} damage. HP {health.CurrentHealth}/{health.MaxHealth}");
+            config.OnDamaged?.Invoke(amount, transform.Position);
         };
 
         health.Died += _ =>

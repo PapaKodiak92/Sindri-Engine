@@ -25,16 +25,10 @@ public abstract class Scene2D : Scene, IRenderableScene
         }
 
         var worldOffset = ActiveCamera?.GetDrawOffset() ?? Vector2F.Zero;
-
         var renderers = new List<RenderComponent>();
 
-        foreach (var entity in Entities)
+        foreach (var entity in GetActiveEntities())
         {
-            if (!entity.IsActive || entity.IsDestroyed)
-            {
-                continue;
-            }
-
             foreach (var renderer in entity.GetComponents<RenderComponent>())
             {
                 renderers.Add(renderer);
@@ -55,6 +49,11 @@ public abstract class Scene2D : Scene, IRenderableScene
 
         foreach (var renderer in renderers)
         {
+            if (renderer.Entity is null || renderer.Entity.IsDestroyed)
+            {
+                continue;
+            }
+
             graphics.DrawOffset = renderer.RenderSpace == RenderSpace.World
                 ? worldOffset
                 : Vector2F.Zero;

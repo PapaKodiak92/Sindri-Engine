@@ -20,8 +20,15 @@ public abstract class Scene : IScene, IEntitySpawner
     {
         OnUpdate(time);
 
-        foreach (var entity in _entities)
+        var snapshot = _entities.ToArray();
+
+        foreach (var entity in snapshot)
         {
+            if (entity.IsDestroyed)
+            {
+                continue;
+            }
+
             entity.Update(time);
         }
 
@@ -32,7 +39,9 @@ public abstract class Scene : IScene, IEntitySpawner
     {
         OnExit();
 
-        foreach (var entity in _entities)
+        var snapshot = _entities.ToArray();
+
+        foreach (var entity in snapshot)
         {
             entity.Destroy();
         }
@@ -50,12 +59,14 @@ public abstract class Scene : IScene, IEntitySpawner
 
     public IEnumerable<Entity> GetEntities()
     {
-        return _entities;
+        return _entities.ToArray();
     }
 
     public IEnumerable<Entity> GetActiveEntities()
     {
-        foreach (var entity in _entities)
+        var snapshot = _entities.ToArray();
+
+        foreach (var entity in snapshot)
         {
             if (entity.IsActive && !entity.IsDestroyed)
             {
