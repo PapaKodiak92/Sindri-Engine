@@ -89,6 +89,18 @@ internal static class SandboxLevel2DLoader
                 enemy.MoveSpeed = 120f;
                 changed = true;
             }
+
+            if (enemy.ContactDamage <= 0)
+            {
+                enemy.ContactDamage = 1;
+                changed = true;
+            }
+
+            if (enemy.ContactCooldownSeconds <= 0f)
+            {
+                enemy.ContactCooldownSeconds = 0.75f;
+                changed = true;
+            }
         }
 
         return changed;
@@ -127,9 +139,38 @@ internal static class SandboxLevel2DLoader
 
             Enemies =
             {
-                new() { Name = "Enemy A", X = -420f, Y = 260f, MaxHealth = 4, MoveSpeed = 120f },
-                new() { Name = "Enemy B", X = 520f, Y = -420f, MaxHealth = 4, MoveSpeed = 120f },
-                new() { Name = "Enemy C", X = 900f, Y = 380f, MaxHealth = 4, MoveSpeed = 120f }
+                new()
+                {
+                    Name = "Enemy A",
+                    X = -420f,
+                    Y = 260f,
+                    MaxHealth = 4,
+                    MoveSpeed = 120f,
+                    ContactDamage = 1,
+                    ContactCooldownSeconds = 0.75f
+                },
+
+                new()
+                {
+                    Name = "Enemy B",
+                    X = 520f,
+                    Y = -420f,
+                    MaxHealth = 4,
+                    MoveSpeed = 120f,
+                    ContactDamage = 1,
+                    ContactCooldownSeconds = 0.75f
+                },
+
+                new()
+                {
+                    Name = "Enemy C",
+                    X = 900f,
+                    Y = 380f,
+                    MaxHealth = 4,
+                    MoveSpeed = 120f,
+                    ContactDamage = 1,
+                    ContactCooldownSeconds = 0.75f
+                }
             }
         };
     }
@@ -162,4 +203,8 @@ internal sealed class SandboxActorSpawn2D : SandboxSpawn2D
     public int MaxHealth { get; set; }
 
     public float MoveSpeed { get; set; }
+
+    public int ContactDamage { get; set; }
+
+    public float ContactCooldownSeconds { get; set; }
 }

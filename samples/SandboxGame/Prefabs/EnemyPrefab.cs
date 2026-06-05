@@ -18,6 +18,8 @@ internal sealed record EnemyPrefabConfig(
     Vector2F MapWorldPosition,
     int MaxHealth,
     float MoveSpeed,
+    int ContactDamage,
+    float ContactCooldownSeconds,
     Action<int, Vector2F>? OnDamaged,
     Action? OnDied);
 
@@ -30,6 +32,12 @@ internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
         var enemySpeed = config.MoveSpeed <= 0f
             ? 120f
             : config.MoveSpeed;
+
+        var contactDamage = System.Math.Max(1, config.ContactDamage);
+
+        var contactCooldownSeconds = config.ContactCooldownSeconds <= 0f
+            ? 0.75f
+            : config.ContactCooldownSeconds;
 
         var enemy = spawner.SpawnEntity(config.Name);
         enemy.AddTag("Enemy");
@@ -60,9 +68,9 @@ internal sealed class EnemyPrefab : IPrefab<EnemyPrefabConfig>
             TargetTag = "Player"
         });
 
-        enemy.AddComponent(new ContactDamage2DComponent(contactTrigger, damage: 1)
+        enemy.AddComponent(new ContactDamage2DComponent(contactTrigger, damage: contactDamage)
         {
-            CooldownSeconds = 0.75f
+            CooldownSeconds = contactCooldownSeconds
         });
 
         var maxHealth = System.Math.Max(1, config.MaxHealth);
