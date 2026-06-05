@@ -22,15 +22,20 @@ public sealed class Pickup2DComponent : Component
     {
     }
 
+    protected override void OnDestroyed()
+    {
+        _trigger.Entered -= Collect;
+    }
+
     private void Collect(Entity collector)
     {
-        if (Entity is null || WasCollected || !Entity.IsActive)
+        if (Entity is null || WasCollected || Entity.IsDestroyed)
         {
             return;
         }
 
         WasCollected = true;
-        Entity.IsActive = false;
         Collected?.Invoke(this);
+        Entity.Destroy();
     }
 }

@@ -14,6 +14,8 @@ public sealed class Entity
 
     public bool IsActive { get; set; } = true;
 
+    public bool IsDestroyed { get; private set; }
+
     public IReadOnlyList<Component> Components => _components;
 
     public IReadOnlyCollection<string> Tags => _tags;
@@ -47,6 +49,11 @@ public sealed class Entity
         where TComponent : Component
     {
         ArgumentNullException.ThrowIfNull(component);
+
+        if (IsDestroyed)
+        {
+            throw new InvalidOperationException($"Cannot add component to destroyed entity '{Name}'.");
+        }
 
         if (component.Entity is not null)
         {
@@ -94,7 +101,7 @@ public sealed class Entity
 
     public void Update(SindriTime time)
     {
-        if (!IsActive)
+        if (!IsActive || IsDestroyed)
         {
             return;
         }
@@ -102,6 +109,30 @@ public sealed class Entity
         foreach (var component in _components)
         {
             component.Update(time);
+
+            if (IsDestroyed)
+            {
+                break;
+            }
         }
+    }
+
+    public void Destroy()
+    {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
+        IsDestroyed = true;
+        IsActive = false;
+
+        foreach (var component in _components)
+        {
+            component.Destroy();
+        }
+
+        _components.Clear();
+        _tags.Clear();
     }
 }

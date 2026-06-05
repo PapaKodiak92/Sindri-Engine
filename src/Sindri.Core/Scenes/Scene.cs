@@ -24,11 +24,19 @@ public abstract class Scene : IScene
         {
             entity.Update(time);
         }
+
+        RemoveDestroyedEntities();
     }
 
     public void Exit()
     {
         OnExit();
+
+        foreach (var entity in _entities)
+        {
+            entity.Destroy();
+        }
+
         _entities.Clear();
         Context = null;
     }
@@ -42,7 +50,7 @@ public abstract class Scene : IScene
     {
         foreach (var entity in _entities)
         {
-            if (entity.IsActive)
+            if (entity.IsActive && !entity.IsDestroyed)
             {
                 yield return entity;
             }
@@ -79,6 +87,12 @@ public abstract class Scene : IScene
         return entity;
     }
 
+    protected void DestroyEntity(Entity entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        entity.Destroy();
+    }
+
     protected virtual void OnEnter(SceneContext context)
     {
     }
@@ -89,5 +103,16 @@ public abstract class Scene : IScene
 
     protected virtual void OnExit()
     {
+    }
+
+    private void RemoveDestroyedEntities()
+    {
+        for (var i = _entities.Count - 1; i >= 0; i--)
+        {
+            if (_entities[i].IsDestroyed)
+            {
+                _entities.RemoveAt(i);
+            }
+        }
     }
 }

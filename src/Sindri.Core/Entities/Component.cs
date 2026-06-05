@@ -10,7 +10,17 @@ public abstract class Component
         OnAttached();
     }
 
+    internal void Destroy()
+    {
+        OnDestroyed();
+        Entity = null;
+    }
+
     protected virtual void OnAttached()
+    {
+    }
+
+    protected virtual void OnDestroyed()
     {
     }
 

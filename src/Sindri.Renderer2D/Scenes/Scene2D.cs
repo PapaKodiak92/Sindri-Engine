@@ -30,7 +30,7 @@ public abstract class Scene2D : Scene, IRenderableScene
 
         foreach (var entity in Entities)
         {
-            if (!entity.IsActive)
+            if (!entity.IsActive || entity.IsDestroyed)
             {
                 continue;
             }
