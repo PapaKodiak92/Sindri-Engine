@@ -8,4 +8,5 @@ public readonly record struct ColorRGBA(byte R, byte G, byte B, byte A = 255)
     public static readonly ColorRGBA SindriGold = new(214, 164, 74);
     public static readonly ColorRGBA SindriRed = new(180, 52, 52);
     public static readonly ColorRGBA SindriGreen = new(62, 166, 96);
+    public static readonly ColorRGBA SindriCyan = new(70, 160, 190);
 }

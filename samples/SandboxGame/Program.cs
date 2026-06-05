@@ -48,6 +48,7 @@ internal sealed class SandboxScene : Scene2D
 
     private int _collectedPickups;
     private int _totalPickups;
+    private bool _isInTriggerZone;
 
     protected override void OnEnter(SceneContext context)
     {
@@ -142,6 +143,8 @@ internal sealed class SandboxScene : Scene2D
         AddPickup("Pickup C", 620f, -320f);
         AddPickup("Pickup D", -800f, 420f);
 
+        AddTriggerZone("Test Trigger Zone", 420f, 320f);
+
         var debugOverlay = CreateEntity("Debug Overlay");
 
         debugOverlay.AddComponent(new Transform2D
@@ -157,7 +160,7 @@ internal sealed class SandboxScene : Scene2D
 
         Console.WriteLine("Sandbox scene entered.");
         Console.WriteLine("WASD / Arrow Keys move player. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
-        Console.WriteLine("Gray and red tiles are solid.");
+        Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
     protected override void OnUpdate(SindriTime time)
@@ -188,24 +191,7 @@ internal sealed class SandboxScene : Scene2D
             }
         }
 
-        if (_debugText is not null && _playerTransform is not null && _cameraTransform is not null)
-        {
-            var tileText = " | Tile none";
-
-            if (_tileHover?.HasHoveredTile == true && _map is not null)
-            {
-                var tile = _map.GetTile(_tileHover.HoveredTileX, _tileHover.HoveredTileY);
-                var solidText = tile.IsSolid ? "solid" : "walkable";
-
-                tileText = $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY} {solidText}";
-            }
-
-            _debugText.Text =
-                $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
-                $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}" +
-                tileText +
-                $" | Pickups {_collectedPickups}/{_totalPickups}";
-        }
+        UpdateDebugText();
 
         if (_tileHover?.WasTileClicked == true)
         {
@@ -216,6 +202,31 @@ internal sealed class SandboxScene : Scene2D
     protected override void OnExit()
     {
         Console.WriteLine("Sandbox scene exited.");
+    }
+
+    private void UpdateDebugText()
+    {
+        if (_debugText is null || _playerTransform is null || _cameraTransform is null)
+        {
+            return;
+        }
+
+        var tileText = " | Tile none";
+
+        if (_tileHover?.HasHoveredTile == true && _map is not null)
+        {
+            var tile = _map.GetTile(_tileHover.HoveredTileX, _tileHover.HoveredTileY);
+            var solidText = tile.IsSolid ? "solid" : "walkable";
+
+            tileText = $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY} {solidText}";
+        }
+
+        _debugText.Text =
+            $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
+            $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}" +
+            tileText +
+            $" | Pickups {_collectedPickups}/{_totalPickups}" +
+            $" | Zone {(_isInTriggerZone ? "inside" : "outside")}";
     }
 
     private void AddPickup(string name, float x, float y)
@@ -254,6 +265,48 @@ internal sealed class SandboxScene : Scene2D
         });
 
         _totalPickups++;
+    }
+
+    private void AddTriggerZone(string name, float x, float y)
+    {
+        const float zoneWidth = 160f;
+        const float zoneHeight = 120f;
+
+        var zone = CreateEntity(name);
+
+        zone.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(x, y)
+        });
+
+        zone.AddComponent(new BoxCollider2D(zoneWidth, zoneHeight)
+        {
+            IsTrigger = true
+        });
+
+        var trigger = zone.AddComponent(new Trigger2DComponent(this)
+        {
+            TargetTag = "Player"
+        });
+
+        trigger.Entered += _ =>
+        {
+            _isInTriggerZone = true;
+            Console.WriteLine("Entered trigger zone.");
+        };
+
+        trigger.Exited += _ =>
+        {
+            _isInTriggerZone = false;
+            Console.WriteLine("Exited trigger zone.");
+        };
+
+        zone.AddComponent(new RectangleRenderer2D(zoneWidth, zoneHeight, ColorRGBA.SindriCyan)
+        {
+            ClampToViewport = false,
+            RenderLayer = 3,
+            RenderOrder = 0
+        });
     }
 
     private TileMapInfo CreateTileMap()

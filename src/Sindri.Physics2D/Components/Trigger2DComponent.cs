@@ -1,13 +1,13 @@
 ﻿using Sindri.Core;
 using Sindri.Core.Entities;
 using Sindri.Core.Scenes;
-using Sindri.Physics2D.Components;
 
 namespace Sindri.Physics2D.Components;
 
 public sealed class Trigger2DComponent : Component
 {
     private readonly Scene _scene;
+    private readonly HashSet<Entity> _insideEntities = new();
 
     public Trigger2DComponent(Scene scene)
     {
@@ -20,18 +20,21 @@ public sealed class Trigger2DComponent : Component
 
     public event Action<Entity>? Stayed;
 
+    public event Action<Entity>? Exited;
+
     public override void Update(SindriTime time)
     {
-        if (Entity is null || !Entity.IsActive)
+        if (Entity is null || !Entity.IsActive || string.IsNullOrWhiteSpace(TargetTag))
         {
             return;
         }
 
         var selfCollider = Entity.GetRequiredComponent<BoxCollider2D>();
+        var overlappingThisFrame = new HashSet<Entity>();
 
         foreach (var target in _scene.FindEntitiesByTag(TargetTag))
         {
-            if (target == Entity)
+            if (target == Entity || !target.IsActive)
             {
                 continue;
             }
@@ -48,8 +51,32 @@ public sealed class Trigger2DComponent : Component
                 continue;
             }
 
-            Entered?.Invoke(target);
-            Stayed?.Invoke(target);
+            overlappingThisFrame.Add(target);
+
+            if (_insideEntities.Add(target))
+            {
+                Entered?.Invoke(target);
+            }
+            else
+            {
+                Stayed?.Invoke(target);
+            }
+        }
+
+        var exitedEntities = new List<Entity>();
+
+        foreach (var entity in _insideEntities)
+        {
+            if (!overlappingThisFrame.Contains(entity))
+            {
+                exitedEntities.Add(entity);
+            }
+        }
+
+        foreach (var entity in exitedEntities)
+        {
+            _insideEntities.Remove(entity);
+            Exited?.Invoke(entity);
         }
     }
 }
