@@ -60,6 +60,33 @@ public sealed class TileMap2D
         Array.Fill(_tiles, tile);
     }
 
+    public bool ContainsTile(int x, int y)
+    {
+        return x >= 0 && x < Width && y >= 0 && y < Height;
+    }
+
+    public bool TryWorldToTile(Vector2F worldPosition, Vector2F mapWorldPosition, out int tileX, out int tileY)
+    {
+        var localX = worldPosition.X - mapWorldPosition.X;
+        var localY = worldPosition.Y - mapWorldPosition.Y;
+
+        tileX = (int)MathF.Floor(localX / TileSize);
+        tileY = (int)MathF.Floor(localY / TileSize);
+
+        return ContainsTile(tileX, tileY);
+    }
+
+    public Rect2D GetTileWorldRect(int x, int y, Vector2F mapWorldPosition)
+    {
+        ValidateCoordinates(x, y);
+
+        return new Rect2D(
+            mapWorldPosition.X + x * TileSize,
+            mapWorldPosition.Y + y * TileSize,
+            TileSize,
+            TileSize);
+    }
+
     public bool IntersectsSolid(Rect2D worldRect, Vector2F mapWorldPosition)
     {
         var localLeft = worldRect.X - mapWorldPosition.X;
@@ -76,7 +103,7 @@ public sealed class TileMap2D
         {
             for (var x = minTileX; x <= maxTileX; x++)
             {
-                if (x < 0 || x >= Width || y < 0 || y >= Height)
+                if (!ContainsTile(x, y))
                 {
                     continue;
                 }

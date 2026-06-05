@@ -38,6 +38,7 @@ internal sealed class SandboxScene : Scene2D
     private Transform2D? _playerTransform;
     private Transform2D? _cameraTransform;
     private TextRenderer2D? _debugText;
+    private TileHover2DComponent? _tileHover;
 
     private IInputDevice? _keyboard;
 
@@ -101,6 +102,18 @@ internal sealed class SandboxScene : Scene2D
 
         ActiveCamera = cameraEntity.AddComponent(new Camera2D());
 
+        var hoverEntity = CreateEntity("Tile Hover");
+
+        _tileHover = hoverEntity.AddComponent(new TileHover2DComponent(mapInfo.Map, mouse, ActiveCamera)
+        {
+            MapWorldPosition = mapInfo.WorldPosition
+        });
+
+        hoverEntity.AddComponent(new TileHoverRenderer2D(_tileHover)
+        {
+            HoverColor = new ColorRGBA(214, 164, 74)
+        });
+
         cameraEntity.AddComponent(new CameraFollow2DComponent(_playerTransform)
         {
             TargetOffset = new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
@@ -132,9 +145,19 @@ internal sealed class SandboxScene : Scene2D
         
         if (_debugText is not null && _playerTransform is not null && _cameraTransform is not null)
         {
+            var tileText = _tileHover?.HasHoveredTile == true
+                ? $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY}"
+                : " | Tile none";
+
             _debugText.Text =
                 $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
-                $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}";
+                $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}" +
+                tileText;
+        }
+
+        if (_tileHover?.WasTileClicked == true)
+        {
+            Console.WriteLine($"Clicked tile {_tileHover.ClickedTileX}, {_tileHover.ClickedTileY}");
         }
     }
 
