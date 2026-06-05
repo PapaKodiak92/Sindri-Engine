@@ -1,11 +1,11 @@
 ﻿using Sindri.Core;
 using Sindri.Core.Entities;
 using Sindri.Core.Math;
-using Sindri.Core.Scenes;
 using Sindri.Graphics;
 using Sindri.Input;
 using Sindri.Platform.Windows;
 using Sindri.Renderer2D.Components;
+using Sindri.Renderer2D.Scenes;
 
 return WindowsGameRunner.Run(new SandboxGame());
 
@@ -29,7 +29,7 @@ internal sealed class SandboxGame : SindriGame
     }
 }
 
-internal sealed class SandboxScene : Scene, IRenderableScene
+internal sealed class SandboxScene : Scene2D
 {
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
@@ -39,6 +39,7 @@ internal sealed class SandboxScene : Scene, IRenderableScene
     protected override void OnEnter(SceneContext context)
     {
         _input = context.Services.GetRequiredService<IInputDevice>();
+        BackgroundColor = ColorRGBA.SindriBlue;
 
         var player = CreateEntity("Player");
 
@@ -61,24 +62,6 @@ internal sealed class SandboxScene : Scene, IRenderableScene
         if (_input?.WasKeyPressed(Key.Escape) == true)
         {
             Context?.RequestExit();
-        }
-    }
-
-    public void Render(IGraphicsDevice graphics)
-    {
-        graphics.Clear(ColorRGBA.SindriBlue);
-
-        foreach (var entity in Entities)
-        {
-            if (!entity.IsActive)
-            {
-                continue;
-            }
-
-            foreach (var renderer in entity.GetComponents<RenderComponent>())
-            {
-                renderer.Render(graphics);
-            }
         }
     }
 
