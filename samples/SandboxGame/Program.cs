@@ -7,6 +7,7 @@ using Sindri.Input;
 using Sindri.Platform.Windows;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Scenes;
+using Sindri.Renderer2D.Tilemaps;
 
 return WindowsGameRunner.Run(new SandboxGame());
 
@@ -43,17 +44,14 @@ internal sealed class SandboxScene : Scene2D
         _keyboard = context.Services.GetRequiredService<IInputDevice>();
         var mouse = context.Services.GetRequiredService<IMouseDevice>();
 
-        BackgroundColor = ColorRGBA.SindriBlue;
+        BackgroundColor = ColorRGBA.Black;
 
         var cameraEntity = CreateEntity("Camera");
         cameraEntity.AddComponent(new Transform2D { Position = Vector2F.Zero });
         ActiveCamera = cameraEntity.AddComponent(new Camera2D());
         cameraEntity.AddComponent(new KeyboardPan2DComponent(_keyboard, CameraSpeed));
 
-        AddWorldMarker("North West Marker", -320f, -180f, ColorRGBA.SindriRed);
-        AddWorldMarker("South East Marker", 360f, 220f, ColorRGBA.SindriGreen);
-        AddWorldMarker("Far Left Marker", -700f, 80f, ColorRGBA.White);
-        AddWorldMarker("Far Right Marker", 700f, -80f, ColorRGBA.White);
+        CreateTileMap();
 
         var player = CreateEntity("Player");
 
@@ -95,20 +93,54 @@ internal sealed class SandboxScene : Scene2D
         Console.WriteLine("Sandbox scene exited.");
     }
 
-    private Entity AddWorldMarker(string name, float x, float y, ColorRGBA color)
+    private void CreateTileMap()
     {
-        var marker = CreateEntity(name);
+        const int tileSize = 64;
+        const int width = 30;
+        const int height = 20;
 
-        marker.AddComponent(new Transform2D
+        var map = new TileMap2D(width, height, tileSize);
+
+        for (var y = 0; y < height; y++)
         {
-            Position = new Vector2F(x, y)
+            for (var x = 0; x < width; x++)
+            {
+                var checker = (x + y) % 2 == 0;
+
+                map.SetTile(
+                    x,
+                    y,
+                    checker
+                        ? new ColorRGBA(32, 45, 58)
+                        : new ColorRGBA(24, 34, 46));
+            }
+        }
+
+        for (var x = 0; x < width; x++)
+        {
+            map.SetTile(x, 0, new ColorRGBA(80, 80, 88));
+            map.SetTile(x, height - 1, new ColorRGBA(80, 80, 88));
+        }
+
+        for (var y = 0; y < height; y++)
+        {
+            map.SetTile(0, y, new ColorRGBA(80, 80, 88));
+            map.SetTile(width - 1, y, new ColorRGBA(80, 80, 88));
+        }
+
+        map.SetTile(5, 5, ColorRGBA.SindriRed);
+        map.SetTile(8, 8, ColorRGBA.SindriGreen);
+        map.SetTile(12, 6, ColorRGBA.White);
+
+        var mapEntity = CreateEntity("Test Tilemap");
+
+        mapEntity.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(
+                -width * tileSize / 2f,
+                -height * tileSize / 2f)
         });
 
-        marker.AddComponent(new RectangleRenderer2D(64f, 64f, color)
-        {
-            ClampToViewport = false
-        });
-
-        return marker;
+        mapEntity.AddComponent(new TileMapRenderer2D(map));
     }
 }

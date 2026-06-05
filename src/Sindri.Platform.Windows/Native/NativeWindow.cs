@@ -159,6 +159,9 @@ internal sealed class NativeWindow : IDisposable
     {
         switch (message)
         {
+            case Win32.WM_ERASEBKGND:
+            return new nint(1);
+            
             case Win32.WM_CLOSE:
                 Win32.DestroyWindow(hwnd);
                 return nint.Zero;

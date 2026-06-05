@@ -59,9 +59,18 @@ public static class WindowsGameRunner
 
             engine.Tick(delta);
 
-            if (engine.ActiveScene is IRenderableScene renderableScene)
+            graphics.BeginFrame();
+
+            try
             {
-                renderableScene.Render(graphics);
+                if (engine.ActiveScene is IRenderableScene renderableScene)
+                {
+                    renderableScene.Render(graphics);
+                }
+            }
+            finally
+            {
+                graphics.EndFrame();
             }
 
             framesThisSecond++;

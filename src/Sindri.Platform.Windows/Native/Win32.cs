@@ -23,6 +23,9 @@ internal static partial class Win32
     public const uint WS_THICKFRAME = 0x00040000;
     public const uint WS_MINIMIZEBOX = 0x00020000;
     public const uint WS_MAXIMIZEBOX = 0x00010000;
+    public const uint WM_ERASEBKGND = 0x0014;
+
+    public const uint SRCCOPY = 0x00CC0020;
 
     public const uint WS_OVERLAPPEDWINDOW =
         WS_OVERLAPPED |
@@ -169,4 +172,28 @@ internal static partial class Win32
         uint style,
         bool hasMenu,
         uint extendedStyle);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern nint CreateCompatibleDC(nint hdc);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern nint CreateCompatibleBitmap(nint hdc, int width, int height);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern nint SelectObject(nint hdc, nint obj);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern bool BitBlt(
+        nint destinationHdc,
+        int destinationX,
+        int destinationY,
+        int width,
+        int height,
+        nint sourceHdc,
+        int sourceX,
+        int sourceY,
+        uint rasterOperation);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern bool DeleteDC(nint hdc);
 }

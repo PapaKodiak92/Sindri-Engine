@@ -8,6 +8,13 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 {
     private readonly nint _hwnd;
 
+    private nint _windowHdc;
+    private nint _memoryHdc;
+    private nint _backBufferBitmap;
+    private nint _oldBitmap;
+    private bool _frameActive;
+    private Size2D _frameViewportSize;
+
     public WindowsGdiGraphicsDevice(nint hwnd)
     {
         _hwnd = hwnd;
@@ -19,6 +26,11 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
     {
         get
         {
+            if (_frameActive)
+            {
+                return _frameViewportSize;
+            }
+
             if (!Win32.GetClientRect(_hwnd, out var rect))
             {
                 return new Size2D(0, 0);
@@ -27,6 +39,113 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
             return new Size2D(
                 Width: Math.Max(0, rect.Right - rect.Left),
                 Height: Math.Max(0, rect.Bottom - rect.Top));
+        }
+    }
+
+    public void BeginFrame()
+    {
+        if (_frameActive)
+        {
+            return;
+        }
+
+        _windowHdc = Win32.GetDC(_hwnd);
+
+        if (_windowHdc == nint.Zero)
+        {
+            return;
+        }
+
+        if (!Win32.GetClientRect(_hwnd, out var rect))
+        {
+            Win32.ReleaseDC(_hwnd, _windowHdc);
+            _windowHdc = nint.Zero;
+            return;
+        }
+
+        _frameViewportSize = new Size2D(
+            Width: Math.Max(0, rect.Right - rect.Left),
+            Height: Math.Max(0, rect.Bottom - rect.Top));
+
+        _memoryHdc = Win32.CreateCompatibleDC(_windowHdc);
+
+        if (_memoryHdc == nint.Zero)
+        {
+            Win32.ReleaseDC(_hwnd, _windowHdc);
+            _windowHdc = nint.Zero;
+            return;
+        }
+
+        _backBufferBitmap = Win32.CreateCompatibleBitmap(
+            _windowHdc,
+            Math.Max(1, _frameViewportSize.Width),
+            Math.Max(1, _frameViewportSize.Height));
+
+        if (_backBufferBitmap == nint.Zero)
+        {
+            Win32.DeleteDC(_memoryHdc);
+            Win32.ReleaseDC(_hwnd, _windowHdc);
+
+            _memoryHdc = nint.Zero;
+            _windowHdc = nint.Zero;
+            return;
+        }
+
+        _oldBitmap = Win32.SelectObject(_memoryHdc, _backBufferBitmap);
+        _frameActive = true;
+    }
+
+    public void EndFrame()
+    {
+        if (!_frameActive)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_frameViewportSize.Width > 0 && _frameViewportSize.Height > 0)
+            {
+                Win32.BitBlt(
+                    _windowHdc,
+                    0,
+                    0,
+                    _frameViewportSize.Width,
+                    _frameViewportSize.Height,
+                    _memoryHdc,
+                    0,
+                    0,
+                    Win32.SRCCOPY);
+            }
+        }
+        finally
+        {
+            if (_oldBitmap != nint.Zero)
+            {
+                Win32.SelectObject(_memoryHdc, _oldBitmap);
+            }
+
+            if (_backBufferBitmap != nint.Zero)
+            {
+                Win32.DeleteObject(_backBufferBitmap);
+            }
+
+            if (_memoryHdc != nint.Zero)
+            {
+                Win32.DeleteDC(_memoryHdc);
+            }
+
+            if (_windowHdc != nint.Zero)
+            {
+                Win32.ReleaseDC(_hwnd, _windowHdc);
+            }
+
+            _windowHdc = nint.Zero;
+            _memoryHdc = nint.Zero;
+            _backBufferBitmap = nint.Zero;
+            _oldBitmap = nint.Zero;
+            _frameActive = false;
+            _frameViewportSize = new Size2D(0, 0);
         }
     }
 
@@ -46,9 +165,11 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
     public void FillRectangle(Rect2D rect, ColorRGBA color)
     {
-        var hdc = Win32.GetDC(_hwnd);
+        var targetHdc = _frameActive
+            ? _memoryHdc
+            : Win32.GetDC(_hwnd);
 
-        if (hdc == nint.Zero)
+        if (targetHdc == nint.Zero)
         {
             return;
         }
@@ -75,7 +196,7 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
             try
             {
-                Win32.FillRect(hdc, ref nativeRect, brush);
+                Win32.FillRect(targetHdc, ref nativeRect, brush);
             }
             finally
             {
@@ -84,7 +205,10 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
         }
         finally
         {
-            Win32.ReleaseDC(_hwnd, hdc);
+            if (!_frameActive)
+            {
+                Win32.ReleaseDC(_hwnd, targetHdc);
+            }
         }
     }
 

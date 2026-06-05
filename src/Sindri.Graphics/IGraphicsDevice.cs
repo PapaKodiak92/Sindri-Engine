@@ -8,6 +8,10 @@ public interface IGraphicsDevice
 
     Vector2F DrawOffset { get; set; }
 
+    void BeginFrame();
+
+    void EndFrame();
+
     void Clear(ColorRGBA color);
 
     void FillRectangle(Rect2D rect, ColorRGBA color);
