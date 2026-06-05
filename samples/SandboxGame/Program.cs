@@ -1,4 +1,7 @@
 ﻿using Sindri.Core;
+using Sindri.Core.Entities;
+using Sindri.Core.Math;
+using Sindri.Core.Scenes;
 using Sindri.Graphics;
 using Sindri.Input;
 using Sindri.Platform.Windows;
@@ -25,70 +28,68 @@ internal sealed class SandboxGame : SindriGame
     }
 }
 
-internal sealed class SandboxScene : IScene, IRenderableScene
+internal sealed class SandboxScene : Scene, IRenderableScene
 {
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
 
-    private SceneContext? _context;
     private IInputDevice? _input;
+    private Transform2D? _playerTransform;
 
-    private float _playerX = 1280f / 2f - PlayerSize / 2f;
-    private float _playerY = 720f / 2f - PlayerSize / 2f;
-
-    public void Enter(SceneContext context)
+    protected override void OnEnter(SceneContext context)
     {
-        _context = context;
         _input = context.Services.GetRequiredService<IInputDevice>();
+
+        var player = CreateEntity("Player");
+        _playerTransform = player.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(
+                1280f / 2f - PlayerSize / 2f,
+                720f / 2f - PlayerSize / 2f)
+        });
 
         Console.WriteLine("Sandbox scene entered.");
         Console.WriteLine("WASD / Arrow Keys move. ESC exits.");
     }
 
-    public void Update(SindriTime time)
+    protected override void OnUpdate(SindriTime time)
     {
-        if (_input is null)
+        if (_input is null || _playerTransform is null)
         {
             return;
         }
 
         if (_input.WasKeyPressed(Key.Escape))
         {
-            _context?.RequestExit();
+            Context?.RequestExit();
             return;
         }
 
-        var moveX = 0f;
-        var moveY = 0f;
+        var move = Vector2F.Zero;
 
         if (_input.IsKeyDown(Key.A) || _input.IsKeyDown(Key.Left))
         {
-            moveX -= 1f;
+            move += new Vector2F(-1f, 0f);
         }
 
         if (_input.IsKeyDown(Key.D) || _input.IsKeyDown(Key.Right))
         {
-            moveX += 1f;
+            move += new Vector2F(1f, 0f);
         }
 
         if (_input.IsKeyDown(Key.W) || _input.IsKeyDown(Key.Up))
         {
-            moveY -= 1f;
+            move += new Vector2F(0f, -1f);
         }
 
         if (_input.IsKeyDown(Key.S) || _input.IsKeyDown(Key.Down))
         {
-            moveY += 1f;
+            move += new Vector2F(0f, 1f);
         }
 
-        if (moveX != 0f || moveY != 0f)
+        if (move != Vector2F.Zero)
         {
-            var length = MathF.Sqrt(moveX * moveX + moveY * moveY);
-            moveX /= length;
-            moveY /= length;
-
-            _playerX += moveX * PlayerSpeed * time.DeltaSeconds;
-            _playerY += moveY * PlayerSpeed * time.DeltaSeconds;
+            _playerTransform.Position += move.Normalized() * PlayerSpeed * time.DeltaSeconds;
         }
     }
 
@@ -96,17 +97,26 @@ internal sealed class SandboxScene : IScene, IRenderableScene
     {
         graphics.Clear(ColorRGBA.SindriBlue);
 
-        var viewport = graphics.ViewportSize;
+        if (_playerTransform is null)
+        {
+            return;
+        }
 
-        _playerX = Math.Clamp(_playerX, 0f, Math.Max(0f, viewport.Width - PlayerSize));
-        _playerY = Math.Clamp(_playerY, 0f, Math.Max(0f, viewport.Height - PlayerSize));
+        var viewport = graphics.ViewportSize;
+        var position = _playerTransform.Position;
+
+        position = new Vector2F(
+            X: Math.Clamp(position.X, 0f, Math.Max(0f, viewport.Width - PlayerSize)),
+            Y: Math.Clamp(position.Y, 0f, Math.Max(0f, viewport.Height - PlayerSize)));
+
+        _playerTransform.Position = position;
 
         graphics.FillRectangle(
-            new Rect2D(_playerX, _playerY, PlayerSize, PlayerSize),
+            new Rect2D(position.X, position.Y, PlayerSize, PlayerSize),
             ColorRGBA.SindriGold);
     }
 
-    public void Exit()
+    protected override void OnExit()
     {
         Console.WriteLine("Sandbox scene exited.");
     }
