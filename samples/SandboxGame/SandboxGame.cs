@@ -16,6 +16,6 @@ internal sealed class SandboxGame : SindriGame
 
     public override IScene CreateInitialScene()
     {
-        return new SandboxScene();
+        return new MainMenuScene();
     }
 }
