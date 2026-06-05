@@ -37,6 +37,10 @@ internal sealed class SandboxScene : Scene2D
     private int _projectileCount;
     private int _destroyedDummies;
     private int _totalDummies;
+    private int _defeatedEnemies;
+    private int _totalEnemies;
+
+    private readonly EnemyPrefab _enemyPrefab = new();
 
     protected override void OnEnter(SceneContext context)
     {
@@ -66,10 +70,14 @@ internal sealed class SandboxScene : Scene2D
         AddTargetDummy("Dummy B", 720f, 240f);
         AddTargetDummy("Dummy C", -620f, -360f);
 
+        AddEnemy("Enemy A", -420f, 260f);
+        AddEnemy("Enemy B", 520f, -420f);
+        AddEnemy("Enemy C", 900f, 380f);
+
         CreateDebugOverlay();
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Space fires. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Space fires. Enemies chase. Left click teleports. Right click toggles solid tiles. P saves. O loads. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid. Cyan zone is a trigger.");
     }
 
@@ -237,7 +245,7 @@ internal sealed class SandboxScene : Scene2D
         });
     }
 
-    private void UpdateDebugText()
+   private void UpdateDebugText()
     {
         if (_debugText is null || _playerTransform is null || _cameraTransform is null)
         {
@@ -261,7 +269,8 @@ internal sealed class SandboxScene : Scene2D
             $" | Pickups {_collectedPickups}/{_totalPickups}" +
             $" | Zone {(_isInTriggerZone ? "inside" : "outside")}" +
             $" | Shots {_projectileCount}" +
-            $" | Dummies {_destroyedDummies}/{_totalDummies}";
+            $" | Dummies {_destroyedDummies}/{_totalDummies}" +
+            $" | Enemies {_defeatedEnemies}/{_totalEnemies}";
     }
 
     private void AddPickup(string name, float x, float y)
@@ -458,6 +467,30 @@ internal sealed class SandboxScene : Scene2D
         });
 
         return new TileMapInfo(map, worldPosition, worldBounds);
+    }
+
+    private void AddEnemy(string name, float x, float y)
+    {
+        if (_prefabSpawner is null || _playerTransform is null || _map is null)
+        {
+            throw new InvalidOperationException("Enemy dependencies were not initialized.");
+        }
+
+        _prefabSpawner.Spawn(
+            _enemyPrefab,
+            new EnemyPrefabConfig(
+                Name: name,
+                X: x,
+                Y: y,
+                Target: _playerTransform,
+                TileMap: _map,
+                MapWorldPosition: GetCurrentMapWorldPosition(),
+                OnDied: () =>
+                {
+                    _defeatedEnemies++;
+                }));
+
+        _totalEnemies++;
     }
 
     private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition, Rect2D WorldBounds);
