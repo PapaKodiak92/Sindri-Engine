@@ -106,14 +106,23 @@ public sealed class Entity
             return;
         }
 
-        foreach (var component in _components)
-        {
-            component.Update(time);
+        var snapshot = _components
+            .OrderBy(component => component.UpdateOrder)
+            .ToArray();
 
+        foreach (var component in snapshot)
+        {
             if (IsDestroyed)
             {
                 break;
             }
+
+            if (component.Entity != this)
+            {
+                continue;
+            }
+
+            component.Update(time);
         }
     }
 
@@ -127,7 +136,9 @@ public sealed class Entity
         IsDestroyed = true;
         IsActive = false;
 
-        foreach (var component in _components)
+        var snapshot = _components.ToArray();
+
+        foreach (var component in snapshot)
         {
             component.Destroy();
         }

@@ -15,7 +15,7 @@ public sealed class TileMapCollision2DComponent : Component
 
     public TileMapCollision2DComponent(TileMap2D tileMap)
     {
-        _tileMap = tileMap ?? throw new ArgumentNullException(nameof(tileMap));
+        _tileMap = tileMap ?? throw new ArgumentNullException(nameof(tileMap)); UpdateOrder = ComponentUpdateOrder.Physics;
     }
 
     public TileMapCollision2DComponent(TileMap2D tileMap, float width, float height)

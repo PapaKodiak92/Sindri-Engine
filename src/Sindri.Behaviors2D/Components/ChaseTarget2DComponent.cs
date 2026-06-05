@@ -11,7 +11,7 @@ public sealed class ChaseTarget2DComponent : Component
     public ChaseTarget2DComponent(Transform2D target, float speed)
     {
         _target = target ?? throw new ArgumentNullException(nameof(target));
-        Speed = speed;
+        Speed = speed; UpdateOrder = ComponentUpdateOrder.Movement;
     }
 
     public float Speed { get; set; }

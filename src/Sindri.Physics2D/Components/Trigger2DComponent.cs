@@ -12,6 +12,7 @@ public sealed class Trigger2DComponent : Component
     public Trigger2DComponent(Scene scene)
     {
         _scene = scene ?? throw new ArgumentNullException(nameof(scene));
+        UpdateOrder = ComponentUpdateOrder.Triggers;
     }
 
     public string TargetTag { get; set; } = string.Empty;

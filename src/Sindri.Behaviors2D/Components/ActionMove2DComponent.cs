@@ -12,7 +12,7 @@ public sealed class ActionMove2DComponent : Component
     public ActionMove2DComponent(InputActionMap actions, float speed)
     {
         _actions = actions ?? throw new ArgumentNullException(nameof(actions));
-        Speed = speed;
+        Speed = speed; UpdateOrder = ComponentUpdateOrder.Movement;
     }
 
     public float Speed { get; set; }

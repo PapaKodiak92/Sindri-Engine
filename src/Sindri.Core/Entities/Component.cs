@@ -4,6 +4,8 @@ public abstract class Component
 {
     public Entity? Entity { get; private set; }
 
+    public int UpdateOrder { get; set; }
+
     internal void Attach(Entity entity)
     {
         Entity = entity;

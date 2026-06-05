@@ -9,7 +9,7 @@ public sealed class DestroyAfterTimeComponent : Component
 
     public DestroyAfterTimeComponent(float lifetimeSeconds)
     {
-        LifetimeSeconds = lifetimeSeconds;
+        LifetimeSeconds = lifetimeSeconds; UpdateOrder = ComponentUpdateOrder.Lifetime;
     }
 
     public float LifetimeSeconds { get; set; }

@@ -6,6 +6,11 @@ namespace Sindri.Physics2D.Components;
 
 public sealed class Velocity2DComponent : Component
 {
+    public Velocity2DComponent()
+    {
+        UpdateOrder = ComponentUpdateOrder.Movement;
+    }
+
     public Vector2F Velocity { get; set; } = Vector2F.Zero;
 
     public override void Update(SindriTime time)

@@ -13,7 +13,7 @@ public sealed class DestroyOnSolidTile2DComponent : Component
 
     public DestroyOnSolidTile2DComponent(TileMap2D tileMap)
     {
-        _tileMap = tileMap ?? throw new ArgumentNullException(nameof(tileMap));
+        _tileMap = tileMap ?? throw new ArgumentNullException(nameof(tileMap)); UpdateOrder = ComponentUpdateOrder.Physics;
     }
 
     public Vector2F MapWorldPosition { get; set; } = Vector2F.Zero;
