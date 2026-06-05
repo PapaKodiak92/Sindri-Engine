@@ -39,6 +39,7 @@ internal sealed class SandboxScene : Scene2D
     private Transform2D? _cameraTransform;
     private TextRenderer2D? _debugText;
     private TileHover2DComponent? _tileHover;
+    private TileMap2D? _map;
 
     private IInputDevice? _keyboard;
 
@@ -50,6 +51,8 @@ internal sealed class SandboxScene : Scene2D
         BackgroundColor = ColorRGBA.Black;
 
         var mapInfo = CreateTileMap();
+
+        _map = mapInfo.Map;
 
         var player = CreateEntity("Player");
 
@@ -109,6 +112,12 @@ internal sealed class SandboxScene : Scene2D
             MapWorldPosition = mapInfo.WorldPosition
         });
 
+        hoverEntity.AddComponent(new TilePaint2DComponent(mapInfo.Map, _tileHover, mouse)
+        {
+            PaintButton = MouseButton.Right,
+            SolidColor = ColorRGBA.SindriRed
+        });
+
         hoverEntity.AddComponent(new TileHoverRenderer2D(_tileHover)
         {
             HoverColor = new ColorRGBA(214, 164, 74)
@@ -132,7 +141,7 @@ internal sealed class SandboxScene : Scene2D
         });
 
         Console.WriteLine("Sandbox scene entered.");
-        Console.WriteLine("WASD / Arrow Keys move player. Camera follows and clamps to map. Left click teleports. ESC exits.");
+        Console.WriteLine("WASD / Arrow Keys move player. Left click teleports. Right click toggles solid tiles. ESC exits.");
         Console.WriteLine("Gray and red tiles are solid.");
     }
 
@@ -145,9 +154,12 @@ internal sealed class SandboxScene : Scene2D
         
         if (_debugText is not null && _playerTransform is not null && _cameraTransform is not null)
         {
-            var tileText = _tileHover?.HasHoveredTile == true
-                ? $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY}"
-                : " | Tile none";
+            var tileText = " | Tile none";
+
+            if (_tileHover?.HasHoveredTile == true)
+            {
+                tileText = $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY}";
+            }
 
             _debugText.Text =
                 $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
