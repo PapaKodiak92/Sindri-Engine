@@ -18,6 +18,8 @@ public sealed class BoxCollider2D : Component
 
     public Vector2F Offset { get; set; } = Vector2F.Zero;
 
+    public bool IsTrigger { get; set; }
+
     public Rect2D GetWorldBounds()
     {
         if (Entity is null)
@@ -37,5 +39,20 @@ public sealed class BoxCollider2D : Component
             position.Y + Offset.Y,
             Width,
             Height);
+    }
+
+    public bool Intersects(BoxCollider2D other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return Intersects(GetWorldBounds(), other.GetWorldBounds());
+    }
+
+    public static bool Intersects(Rect2D a, Rect2D b)
+    {
+        return
+            a.X < b.X + b.Width &&
+            a.X + a.Width > b.X &&
+            a.Y < b.Y + b.Height &&
+            a.Y + a.Height > b.Y;
     }
 }

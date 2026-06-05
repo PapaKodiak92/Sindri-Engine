@@ -4,11 +4,11 @@ using Sindri.Core.Entities;
 using Sindri.Core.Math;
 using Sindri.Graphics;
 using Sindri.Input;
+using Sindri.Physics2D.Components;
 using Sindri.Platform.Windows;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Scenes;
 using Sindri.Renderer2D.Tilemaps;
-using Sindri.Physics2D.Components;
 
 return WindowsGameRunner.Run(new SandboxGame());
 
@@ -34,16 +34,20 @@ internal sealed class SandboxGame : SindriGame
 
 internal sealed class SandboxScene : Scene2D
 {
+    private const string MapSavePath = "runtime-data/maps/sandbox.tilemap.json";
+
     private const float PlayerSize = 48f;
     private const float PlayerSpeed = 320f;
-    private const string MapSavePath = "runtime-data/maps/sandbox.tilemap.json";
+
+    private IInputDevice? _keyboard;
+    private TileMap2D? _map;
+    private TileHover2DComponent? _tileHover;
     private Transform2D? _playerTransform;
     private Transform2D? _cameraTransform;
     private TextRenderer2D? _debugText;
-    private TileHover2DComponent? _tileHover;
-    private TileMap2D? _map;
 
-    private IInputDevice? _keyboard;
+    private int _collectedPickups;
+    private int _totalPickups;
 
     protected override void OnEnter(SceneContext context)
     {
@@ -53,32 +57,18 @@ internal sealed class SandboxScene : Scene2D
         BackgroundColor = ColorRGBA.Black;
 
         var mapInfo = CreateTileMap();
-
         _map = mapInfo.Map;
 
         var player = CreateEntity("Player");
-
-        var debugOverlay = CreateEntity("Debug Overlay");
-
-        debugOverlay.AddComponent(new Transform2D
-        {
-            Position = new Vector2F(12f, 12f)
-        });
-
-        _debugText = debugOverlay.AddComponent(new TextRenderer2D("Debug", ColorRGBA.White)
-        {
-            RenderSpace = RenderSpace.Screen,
-            RenderLayer = 10_000
-        });
 
         _playerTransform = player.AddComponent(new Transform2D
         {
             Position = Vector2F.Zero
         });
 
-        player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
+        var playerCollider = player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
 
-        player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
+        player.AddComponent(new KeyboardMove2DComponent(_keyboard, PlayerSpeed));
 
         player.AddComponent(new TileMapCollision2DComponent(mapInfo.Map)
         {
@@ -111,6 +101,23 @@ internal sealed class SandboxScene : Scene2D
 
         ActiveCamera = cameraEntity.AddComponent(new Camera2D());
 
+        cameraEntity.AddComponent(new CameraFollow2DComponent(_playerTransform)
+        {
+            TargetOffset = new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
+            FollowStrength = 1f
+        });
+
+        cameraEntity.AddComponent(new CameraBounds2DComponent(mapInfo.WorldBounds));
+
+        player.AddComponent(new MouseClickTeleport2DComponent(mouse)
+        {
+            Button = MouseButton.Left,
+            Camera = ActiveCamera,
+            CenterOnMouse = true,
+            CenterWidth = PlayerSize,
+            CenterHeight = PlayerSize
+        });
+
         var hoverEntity = CreateEntity("Tile Hover");
 
         _tileHover = hoverEntity.AddComponent(new TileHover2DComponent(mapInfo.Map, mouse, ActiveCamera)
@@ -129,21 +136,22 @@ internal sealed class SandboxScene : Scene2D
             HoverColor = new ColorRGBA(214, 164, 74)
         });
 
-        cameraEntity.AddComponent(new CameraFollow2DComponent(_playerTransform)
+        AddPickup("Pickup A", -260f, -140f, playerCollider);
+        AddPickup("Pickup B", 220f, 180f, playerCollider);
+        AddPickup("Pickup C", 620f, -320f, playerCollider);
+        AddPickup("Pickup D", -800f, 420f, playerCollider);
+
+        var debugOverlay = CreateEntity("Debug Overlay");
+
+        debugOverlay.AddComponent(new Transform2D
         {
-            TargetOffset = new Vector2F(PlayerSize / 2f, PlayerSize / 2f),
-            FollowStrength = 1f
+            Position = new Vector2F(12f, 12f)
         });
 
-        cameraEntity.AddComponent(new CameraBounds2DComponent(mapInfo.WorldBounds));
-
-        player.AddComponent(new MouseClickTeleport2DComponent(mouse)
+        _debugText = debugOverlay.AddComponent(new TextRenderer2D("Debug", ColorRGBA.White)
         {
-            Button = MouseButton.Left,
-            Camera = ActiveCamera,
-            CenterOnMouse = true,
-            CenterWidth = PlayerSize,
-            CenterHeight = PlayerSize
+            RenderSpace = RenderSpace.Screen,
+            RenderLayer = 10_000
         });
 
         Console.WriteLine("Sandbox scene entered.");
@@ -156,8 +164,9 @@ internal sealed class SandboxScene : Scene2D
         if (_keyboard?.WasKeyPressed(Key.Escape) == true)
         {
             Context?.RequestExit();
+            return;
         }
-        
+
         if (_keyboard?.WasKeyPressed(Key.P) == true && _map is not null)
         {
             TileMapJsonSerializer.Save(_map, MapSavePath);
@@ -182,15 +191,19 @@ internal sealed class SandboxScene : Scene2D
         {
             var tileText = " | Tile none";
 
-            if (_tileHover?.HasHoveredTile == true)
+            if (_tileHover?.HasHoveredTile == true && _map is not null)
             {
-                tileText = $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY}";
+                var tile = _map.GetTile(_tileHover.HoveredTileX, _tileHover.HoveredTileY);
+                var solidText = tile.IsSolid ? "solid" : "walkable";
+
+                tileText = $" | Tile {_tileHover.HoveredTileX},{_tileHover.HoveredTileY} {solidText}";
             }
 
             _debugText.Text =
                 $"Player {_playerTransform.Position.X:0},{_playerTransform.Position.Y:0} | " +
                 $"Camera {_cameraTransform.Position.X:0},{_cameraTransform.Position.Y:0}" +
-                tileText;
+                tileText +
+                $" | Pickups {_collectedPickups}/{_totalPickups}";
         }
 
         if (_tileHover?.WasTileClicked == true)
@@ -202,6 +215,39 @@ internal sealed class SandboxScene : Scene2D
     protected override void OnExit()
     {
         Console.WriteLine("Sandbox scene exited.");
+    }
+
+    private void AddPickup(string name, float x, float y, BoxCollider2D playerCollider)
+    {
+        const float pickupSize = 32f;
+
+        var pickup = CreateEntity(name);
+
+        pickup.AddComponent(new Transform2D
+        {
+            Position = new Vector2F(x, y)
+        });
+
+        pickup.AddComponent(new BoxCollider2D(pickupSize, pickupSize)
+        {
+            IsTrigger = true
+        });
+
+        var pickupComponent = pickup.AddComponent(new Pickup2DComponent(playerCollider));
+
+        pickupComponent.Collected += _ =>
+        {
+            _collectedPickups++;
+            Console.WriteLine($"Collected {name}. {_collectedPickups}/{_totalPickups}");
+        };
+
+        pickup.AddComponent(new RectangleRenderer2D(pickupSize, pickupSize, ColorRGBA.SindriGreen)
+        {
+            ClampToViewport = false,
+            RenderLayer = 8
+        });
+
+        _totalPickups++;
     }
 
     private TileMapInfo CreateTileMap()
