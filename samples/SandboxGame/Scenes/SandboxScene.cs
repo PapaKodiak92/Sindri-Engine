@@ -334,7 +334,8 @@ private int _destroyedDummies;
             {
                 SpawnParticleBurst(spawnPosition, firedWeapon.MuzzleColor, count: 8, strength: 0.55f);
                 AddDebugColliderRenderersToExistingEntities();
-            })
+            },
+            onMeleeAttack: SpawnMeleeSlash)
         {
             FireAction = FireAction,
             CycleWeaponAction = CycleWeaponAction,
@@ -699,6 +700,30 @@ private int _destroyedDummies;
             MinSize = 3f,
             MaxSize = 7f,
             RenderLayer = 35
+        });
+    }
+
+    private void SpawnMeleeSlash(Vector2F ownerCenter, Vector2F direction, Weapon2DDefinition weapon)
+    {
+        if (weapon.AttackType != WeaponAttackType.Melee)
+        {
+            return;
+        }
+
+        var slash = CreateEntity($"{weapon.Name} Slash");
+
+        slash.AddComponent(new Transform2D
+        {
+            Position = ownerCenter + direction.Normalized() * 24f
+        });
+
+        slash.AddComponent(new MeleeSlashVisual2DComponent(weapon.ProjectileColor)
+        {
+            Direction = direction,
+            Length = weapon.Name.Equals("Sword", StringComparison.OrdinalIgnoreCase) ? 82f : 52f,
+            Thickness = weapon.Name.Equals("Sword", StringComparison.OrdinalIgnoreCase) ? 14f : 9f,
+            LifetimeSeconds = weapon.MeleeLifetimeSeconds,
+            RenderLayer = 26
         });
     }
 

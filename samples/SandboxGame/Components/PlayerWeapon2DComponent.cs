@@ -20,6 +20,7 @@ internal sealed class PlayerWeapon2DComponent : Component
     private readonly TileMap2D _tileMap;
     private readonly Func<Vector2F> _getMapWorldPosition;
     private readonly Action<Vector2F, Weapon2DDefinition>? _onFired;
+    private readonly Action<Vector2F, Vector2F, Weapon2DDefinition>? _onMeleeAttack;
     private readonly CooldownTimer _cooldown = new(0.18f);
 
     private int _weaponIndex;
@@ -34,7 +35,8 @@ internal sealed class PlayerWeapon2DComponent : Component
         MeleeHitboxPrefab meleeHitboxPrefab,
         TileMap2D tileMap,
         Func<Vector2F> getMapWorldPosition,
-        Action<Vector2F, Weapon2DDefinition>? onFired)
+        Action<Vector2F, Weapon2DDefinition>? onFired,
+        Action<Vector2F, Vector2F, Weapon2DDefinition>? onMeleeAttack)
     {
         _actions = actions ?? throw new ArgumentNullException(nameof(actions));
         _mouse = mouse ?? throw new ArgumentNullException(nameof(mouse));
@@ -46,6 +48,7 @@ internal sealed class PlayerWeapon2DComponent : Component
         _tileMap = tileMap ?? throw new ArgumentNullException(nameof(tileMap));
         _getMapWorldPosition = getMapWorldPosition ?? throw new ArgumentNullException(nameof(getMapWorldPosition));
         _onFired = onFired;
+        _onMeleeAttack = onMeleeAttack;
 
         UpdateOrder = ComponentUpdateOrder.Gameplay;
     }
@@ -205,5 +208,6 @@ internal sealed class PlayerWeapon2DComponent : Component
                 LifetimeSeconds: weapon.MeleeLifetimeSeconds));
 
         _onFired?.Invoke(center, weapon);
+        _onMeleeAttack?.Invoke(ownerCenter, direction, weapon);
     }
 }
