@@ -11,6 +11,7 @@ public sealed class CameraBounds2DComponent : Component
     public CameraBounds2DComponent(Rect2D worldBounds)
     {
         WorldBounds = worldBounds;
+        UpdateOrder = ComponentUpdateOrder.Physics;
     }
 
     public Rect2D WorldBounds { get; set; }
@@ -25,14 +26,15 @@ public sealed class CameraBounds2DComponent : Component
         var transform = Entity.GetRequiredComponent<Transform2D>();
         var camera = Entity.GetRequiredComponent<Camera2D>();
         var viewport = camera.ViewportSize;
+        var zoom = System.MathF.Max(0.0001f, camera.Zoom);
 
         if (viewport.Width <= 0 || viewport.Height <= 0)
         {
             return;
         }
 
-        var halfViewportWidth = viewport.Width / 2f;
-        var halfViewportHeight = viewport.Height / 2f;
+        var halfViewportWidth = viewport.Width / (2f * zoom);
+        var halfViewportHeight = viewport.Height / (2f * zoom);
 
         var minX = WorldBounds.X + halfViewportWidth;
         var maxX = WorldBounds.X + WorldBounds.Width - halfViewportWidth;
@@ -49,7 +51,7 @@ public sealed class CameraBounds2DComponent : Component
         }
         else
         {
-            targetX = Math.Clamp(targetX, minX, maxX);
+            targetX = System.Math.Clamp(targetX, minX, maxX);
         }
 
         if (minY > maxY)
@@ -58,7 +60,7 @@ public sealed class CameraBounds2DComponent : Component
         }
         else
         {
-            targetY = Math.Clamp(targetY, minY, maxY);
+            targetY = System.Math.Clamp(targetY, minY, maxY);
         }
 
         transform.Position = new Vector2F(targetX, targetY);

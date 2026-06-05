@@ -22,6 +22,8 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
     public Vector2F DrawOffset { get; set; } = Vector2F.Zero;
 
+    public float DrawScale { get; set; } = 1f;
+
     public Size2D ViewportSize
     {
         get
@@ -37,8 +39,8 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
             }
 
             return new Size2D(
-                Width: Math.Max(0, rect.Right - rect.Left),
-                Height: Math.Max(0, rect.Bottom - rect.Top));
+                Width: System.Math.Max(0, rect.Right - rect.Left),
+                Height: System.Math.Max(0, rect.Bottom - rect.Top));
         }
     }
 
@@ -64,8 +66,8 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
         }
 
         _frameViewportSize = new Size2D(
-            Width: Math.Max(0, rect.Right - rect.Left),
-            Height: Math.Max(0, rect.Bottom - rect.Top));
+            Width: System.Math.Max(0, rect.Right - rect.Left),
+            Height: System.Math.Max(0, rect.Bottom - rect.Top));
 
         _memoryHdc = Win32.CreateCompatibleDC(_windowHdc);
 
@@ -78,8 +80,8 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
         _backBufferBitmap = Win32.CreateCompatibleBitmap(
             _windowHdc,
-            Math.Max(1, _frameViewportSize.Width),
-            Math.Max(1, _frameViewportSize.Height));
+            System.Math.Max(1, _frameViewportSize.Width),
+            System.Math.Max(1, _frameViewportSize.Height));
 
         if (_backBufferBitmap == nint.Zero)
         {
@@ -152,7 +154,10 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
     public void Clear(ColorRGBA color)
     {
         var oldOffset = DrawOffset;
+        var oldScale = DrawScale;
+
         DrawOffset = Vector2F.Zero;
+        DrawScale = 1f;
 
         var viewport = ViewportSize;
 
@@ -161,6 +166,7 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
             color);
 
         DrawOffset = oldOffset;
+        DrawScale = oldScale;
     }
 
     public void FillRectangle(Rect2D rect, ColorRGBA color)
@@ -176,15 +182,19 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
         try
         {
-            var x = rect.X + DrawOffset.X;
-            var y = rect.Y + DrawOffset.Y;
+            var scale = System.MathF.Max(0.0001f, DrawScale);
+
+            var x = rect.X * scale + DrawOffset.X;
+            var y = rect.Y * scale + DrawOffset.Y;
+            var width = rect.Width * scale;
+            var height = rect.Height * scale;
 
             var nativeRect = new Win32.RECT
             {
-                Left = (int)MathF.Round(x),
-                Top = (int)MathF.Round(y),
-                Right = (int)MathF.Round(x + rect.Width),
-                Bottom = (int)MathF.Round(y + rect.Height)
+                Left = (int)System.MathF.Round(x),
+                Top = (int)System.MathF.Round(y),
+                Right = (int)System.MathF.Round(x + width),
+                Bottom = (int)System.MathF.Round(y + height)
             };
 
             var brush = Win32.CreateSolidBrush(ToColorRef(color));
@@ -230,15 +240,17 @@ internal sealed class WindowsGdiGraphicsDevice : IGraphicsDevice
 
         try
         {
-            var x = position.X + DrawOffset.X;
-            var y = position.Y + DrawOffset.Y;
+            var scale = System.MathF.Max(0.0001f, DrawScale);
+
+            var x = position.X * scale + DrawOffset.X;
+            var y = position.Y * scale + DrawOffset.Y;
 
             Win32.SetBkMode(targetHdc, Win32.TRANSPARENT);
             Win32.SetTextColor(targetHdc, ToColorRef(color));
             Win32.TextOutW(
                 targetHdc,
-                (int)MathF.Round(x),
-                (int)MathF.Round(y),
+                (int)System.MathF.Round(x),
+                (int)System.MathF.Round(y),
                 text,
                 text.Length);
         }

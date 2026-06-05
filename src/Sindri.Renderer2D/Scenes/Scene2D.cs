@@ -15,6 +15,7 @@ public abstract class Scene2D : Scene, IRenderableScene
     public void Render(IGraphicsDevice graphics)
     {
         graphics.DrawOffset = Vector2F.Zero;
+        graphics.DrawScale = 1f;
         graphics.Clear(BackgroundColor);
 
         OnBeforeRender(graphics);
@@ -25,6 +26,10 @@ public abstract class Scene2D : Scene, IRenderableScene
         }
 
         var worldOffset = ActiveCamera?.GetDrawOffset() ?? Vector2F.Zero;
+        var worldScale = ActiveCamera is null
+            ? 1f
+            : System.MathF.Max(0.0001f, ActiveCamera.Zoom);
+
         var renderers = new List<RenderComponent>();
 
         foreach (var entity in GetActiveEntities())
@@ -57,14 +62,22 @@ public abstract class Scene2D : Scene, IRenderableScene
                 continue;
             }
 
-            graphics.DrawOffset = renderer.RenderSpace == RenderSpace.World
-                ? worldOffset
-                : Vector2F.Zero;
+            if (renderer.RenderSpace == RenderSpace.World)
+            {
+                graphics.DrawOffset = worldOffset;
+                graphics.DrawScale = worldScale;
+            }
+            else
+            {
+                graphics.DrawOffset = Vector2F.Zero;
+                graphics.DrawScale = 1f;
+            }
 
             renderer.Render(graphics);
         }
 
         graphics.DrawOffset = Vector2F.Zero;
+        graphics.DrawScale = 1f;
 
         OnAfterRender(graphics);
     }

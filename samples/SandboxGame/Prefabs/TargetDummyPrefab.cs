@@ -21,6 +21,7 @@ internal sealed class TargetDummyPrefab : IPrefab<TargetDummyPrefabConfig>
 
         var dummy = spawner.SpawnEntity(config.Name);
         dummy.AddTag("Damageable");
+        dummy.AddTag("Solid");
 
         var transform = dummy.AddComponent(new Transform2D
         {

@@ -8,6 +8,8 @@ public interface IGraphicsDevice
 
     Vector2F DrawOffset { get; set; }
 
+    float DrawScale { get; set; }
+
     void BeginFrame();
 
     void EndFrame();

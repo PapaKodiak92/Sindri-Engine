@@ -25,21 +25,22 @@ public sealed class TileMapRenderer2D : RenderComponent
         var origin = transform.Position;
         var viewport = graphics.ViewportSize;
         var offset = graphics.DrawOffset;
+        var scale = System.MathF.Max(0.0001f, graphics.DrawScale);
 
-        var visibleLeft = -offset.X;
-        var visibleTop = -offset.Y;
-        var visibleRight = visibleLeft + viewport.Width;
-        var visibleBottom = visibleTop + viewport.Height;
+        var visibleLeft = -offset.X / scale;
+        var visibleTop = -offset.Y / scale;
+        var visibleRight = (viewport.Width - offset.X) / scale;
+        var visibleBottom = (viewport.Height - offset.Y) / scale;
 
         var localVisibleLeft = visibleLeft - origin.X;
         var localVisibleTop = visibleTop - origin.Y;
         var localVisibleRight = visibleRight - origin.X;
         var localVisibleBottom = visibleBottom - origin.Y;
 
-        var minTileX = Math.Clamp((int)MathF.Floor(localVisibleLeft / TileMap.TileSize), 0, TileMap.Width - 1);
-        var minTileY = Math.Clamp((int)MathF.Floor(localVisibleTop / TileMap.TileSize), 0, TileMap.Height - 1);
-        var maxTileX = Math.Clamp((int)MathF.Floor(localVisibleRight / TileMap.TileSize), 0, TileMap.Width - 1);
-        var maxTileY = Math.Clamp((int)MathF.Floor(localVisibleBottom / TileMap.TileSize), 0, TileMap.Height - 1);
+        var minTileX = System.Math.Clamp((int)System.MathF.Floor(localVisibleLeft / TileMap.TileSize), 0, TileMap.Width - 1);
+        var minTileY = System.Math.Clamp((int)System.MathF.Floor(localVisibleTop / TileMap.TileSize), 0, TileMap.Height - 1);
+        var maxTileX = System.Math.Clamp((int)System.MathF.Floor(localVisibleRight / TileMap.TileSize), 0, TileMap.Width - 1);
+        var maxTileY = System.Math.Clamp((int)System.MathF.Floor(localVisibleBottom / TileMap.TileSize), 0, TileMap.Height - 1);
 
         LastRenderedTileCount = 0;
 

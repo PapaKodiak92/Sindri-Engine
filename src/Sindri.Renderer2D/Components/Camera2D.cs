@@ -18,14 +18,20 @@ public sealed class Camera2D : Component
         }
 
         var transform = Entity.GetRequiredComponent<Transform2D>();
+        var zoom = System.MathF.Max(0.0001f, Zoom);
 
         return new Vector2F(
-            ViewportSize.Width / 2f - transform.Position.X,
-            ViewportSize.Height / 2f - transform.Position.Y);
+            ViewportSize.Width / 2f - transform.Position.X * zoom,
+            ViewportSize.Height / 2f - transform.Position.Y * zoom);
     }
 
     public Vector2F ScreenToWorld(Vector2F screenPosition)
     {
-        return screenPosition - GetDrawOffset();
+        var zoom = System.MathF.Max(0.0001f, Zoom);
+        var offset = GetDrawOffset();
+
+        return new Vector2F(
+            (screenPosition.X - offset.X) / zoom,
+            (screenPosition.Y - offset.Y) / zoom);
     }
 }
