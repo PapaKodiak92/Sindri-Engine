@@ -8,6 +8,7 @@ using Sindri.Physics2D.Components;
 using Sindri.Renderer2D.Components;
 using Sindri.Renderer2D.Scenes;
 using Sindri.Renderer2D.Tilemaps;
+using Sindri.Core.Prefabs;
 
 internal sealed class SandboxScene : Scene2D
 {
@@ -27,10 +28,16 @@ internal sealed class SandboxScene : Scene2D
     private int _totalPickups;
     private bool _isInTriggerZone;
 
+    private readonly PickupPrefab _pickupPrefab = new();
+    private readonly TriggerZonePrefab _triggerZonePrefab = new();
+    private PrefabSpawner? _prefabSpawner;
+
     protected override void OnEnter(SceneContext context)
     {
         _keyboard = context.Services.GetRequiredService<IInputDevice>();
         var mouse = context.Services.GetRequiredService<IMouseDevice>();
+
+        _prefabSpawner = new PrefabSpawner(this);
 
         BackgroundColor = ColorRGBA.Black;
 
@@ -244,39 +251,51 @@ internal sealed class SandboxScene : Scene2D
 
     private void AddPickup(string name, float x, float y)
     {
-        SandboxPrefabs.CreatePickup(
-            this,
-            this,
-            name,
-            x,
-            y,
-            onCollected: () =>
-            {
-                _collectedPickups++;
-                Console.WriteLine($"Collected {name}. {_collectedPickups}/{_totalPickups}");
-            });
+        if (_prefabSpawner is null)
+        {
+            throw new InvalidOperationException("Prefab spawner was not initialized.");
+        }
+
+        _prefabSpawner.Spawn(
+            _pickupPrefab,
+            new PickupPrefabConfig(
+                TriggerScene: this,
+                Name: name,
+                X: x,
+                Y: y,
+                OnCollected: () =>
+                {
+                    _collectedPickups++;
+                    Console.WriteLine($"Collected {name}. {_collectedPickups}/{_totalPickups}");
+                }));
 
         _totalPickups++;
     }
 
     private void AddTriggerZone(string name, float x, float y)
     {
-        SandboxPrefabs.CreateTriggerZone(
-            this,
-            this,
-            name,
-            x,
-            y,
-            onEntered: () =>
-            {
-                _isInTriggerZone = true;
-                Console.WriteLine("Entered trigger zone.");
-            },
-            onExited: () =>
-            {
-                _isInTriggerZone = false;
-                Console.WriteLine("Exited trigger zone.");
-            });
+        if (_prefabSpawner is null)
+        {
+            throw new InvalidOperationException("Prefab spawner was not initialized.");
+        }
+
+        _prefabSpawner.Spawn(
+            _triggerZonePrefab,
+            new TriggerZonePrefabConfig(
+                TriggerScene: this,
+                Name: name,
+                X: x,
+                Y: y,
+                OnEntered: () =>
+                {
+                    _isInTriggerZone = true;
+                    Console.WriteLine("Entered trigger zone.");
+                },
+                OnExited: () =>
+                {
+                    _isInTriggerZone = false;
+                    Console.WriteLine("Exited trigger zone.");
+                }));
     }
 
     private TileMapInfo CreateTileMap()

@@ -1,28 +1,30 @@
 ﻿using Sindri.Behaviors2D.Components;
 using Sindri.Core.Entities;
 using Sindri.Core.Math;
+using Sindri.Core.Prefabs;
 using Sindri.Core.Scenes;
 using Sindri.Graphics;
 using Sindri.Physics2D.Components;
 using Sindri.Renderer2D.Components;
 
-internal static class SandboxPrefabs
+internal sealed record PickupPrefabConfig(
+    Scene TriggerScene,
+    string Name,
+    float X,
+    float Y,
+    Action? OnCollected);
+
+internal sealed class PickupPrefab : IPrefab<PickupPrefabConfig>
 {
-    public static Entity CreatePickup(
-        IEntitySpawner spawner,
-        Scene triggerScene,
-        string name,
-        float x,
-        float y,
-        Action? onCollected)
+    public Entity Create(IEntitySpawner spawner, PickupPrefabConfig config)
     {
         const float pickupSize = 32f;
 
-        var pickup = spawner.SpawnEntity(name);
+        var pickup = spawner.SpawnEntity(config.Name);
 
         pickup.AddComponent(new Transform2D
         {
-            Position = new Vector2F(x, y)
+            Position = new Vector2F(config.X, config.Y)
         });
 
         pickup.AddComponent(new BoxCollider2D(pickupSize, pickupSize)
@@ -30,14 +32,13 @@ internal static class SandboxPrefabs
             IsTrigger = true
         });
 
-        var trigger = pickup.AddComponent(new Trigger2DComponent(triggerScene)
+        var trigger = pickup.AddComponent(new Trigger2DComponent(config.TriggerScene)
         {
             TargetTag = "Player"
         });
 
         var pickupComponent = pickup.AddComponent(new Pickup2DComponent(trigger));
-
-        pickupComponent.Collected += _ => onCollected?.Invoke();
+        pickupComponent.Collected += _ => config.OnCollected?.Invoke();
 
         pickup.AddComponent(new RectangleRenderer2D(pickupSize, pickupSize, ColorRGBA.SindriGreen)
         {
@@ -47,24 +48,28 @@ internal static class SandboxPrefabs
 
         return pickup;
     }
+}
 
-    public static Entity CreateTriggerZone(
-        IEntitySpawner spawner,
-        Scene triggerScene,
-        string name,
-        float x,
-        float y,
-        Action? onEntered,
-        Action? onExited)
+internal sealed record TriggerZonePrefabConfig(
+    Scene TriggerScene,
+    string Name,
+    float X,
+    float Y,
+    Action? OnEntered,
+    Action? OnExited);
+
+internal sealed class TriggerZonePrefab : IPrefab<TriggerZonePrefabConfig>
+{
+    public Entity Create(IEntitySpawner spawner, TriggerZonePrefabConfig config)
     {
         const float zoneWidth = 160f;
         const float zoneHeight = 120f;
 
-        var zone = spawner.SpawnEntity(name);
+        var zone = spawner.SpawnEntity(config.Name);
 
         zone.AddComponent(new Transform2D
         {
-            Position = new Vector2F(x, y)
+            Position = new Vector2F(config.X, config.Y)
         });
 
         zone.AddComponent(new BoxCollider2D(zoneWidth, zoneHeight)
@@ -72,13 +77,13 @@ internal static class SandboxPrefabs
             IsTrigger = true
         });
 
-        var trigger = zone.AddComponent(new Trigger2DComponent(triggerScene)
+        var trigger = zone.AddComponent(new Trigger2DComponent(config.TriggerScene)
         {
             TargetTag = "Player"
         });
 
-        trigger.Entered += _ => onEntered?.Invoke();
-        trigger.Exited += _ => onExited?.Invoke();
+        trigger.Entered += _ => config.OnEntered?.Invoke();
+        trigger.Exited += _ => config.OnExited?.Invoke();
 
         zone.AddComponent(new RectangleRenderer2D(zoneWidth, zoneHeight, ColorRGBA.SindriCyan)
         {
