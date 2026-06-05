@@ -150,4 +150,7 @@ internal static partial class Win32
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern int FillRect(nint hdc, ref RECT rect, nint brush);
+
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int virtualKey);
 }

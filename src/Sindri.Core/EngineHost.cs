@@ -13,11 +13,16 @@ public sealed class EngineHost
         _game = game ?? throw new ArgumentNullException(nameof(game));
         _config = new EngineConfig();
         _sceneContext = new SceneContext(this);
+        Services = new EngineServices();
     }
 
     public EngineConfig Config => _config;
 
+    public EngineServices Services { get; }
+
     public IScene? ActiveScene => _activeScene;
+
+    public bool ExitRequested { get; private set; }
 
     public void Initialize()
     {
@@ -43,6 +48,11 @@ public sealed class EngineHost
 
         _totalTime += delta;
         _activeScene?.Update(new SindriTime(delta, _totalTime));
+    }
+
+    public void RequestExit()
+    {
+        ExitRequested = true;
     }
 
     public void Shutdown()

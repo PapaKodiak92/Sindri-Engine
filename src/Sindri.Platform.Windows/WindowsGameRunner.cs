@@ -2,7 +2,9 @@
 using System.Runtime.Versioning;
 using Sindri.Core;
 using Sindri.Graphics;
+using Sindri.Input;
 using Sindri.Platform.Windows.Graphics;
+using Sindri.Platform.Windows.Input;
 using Sindri.Platform.Windows.Native;
 
 namespace Sindri.Platform.Windows;
@@ -15,6 +17,10 @@ public static class WindowsGameRunner
         ArgumentNullException.ThrowIfNull(game);
 
         var engine = new EngineHost(game);
+
+        var input = new WindowsKeyboardInput();
+        engine.Services.Register<IInputDevice>(input);
+
         engine.Initialize();
 
         var config = engine.Config;
@@ -31,11 +37,13 @@ public static class WindowsGameRunner
         var stopwatch = Stopwatch.StartNew();
         var previous = stopwatch.Elapsed;
 
-        while (window.ProcessMessages())
+        while (!engine.ExitRequested && window.ProcessMessages())
         {
             var current = stopwatch.Elapsed;
             var delta = current - previous;
             previous = current;
+
+            input.Update();
 
             engine.Tick(delta);
 

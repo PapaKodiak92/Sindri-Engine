@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\Sindri.Core\Sindri.Core.csproj" />
     <ProjectReference Include="..\..\src\Sindri.Platform.Windows\Sindri.Platform.Windows.csproj" />
     <ProjectReference Include="..\..\src\Sindri.Graphics\Sindri.Graphics.csproj" />
+    <ProjectReference Include="..\..\src\Sindri.Input\Sindri.Input.csproj" />
   </ItemGroup>
 
 </Project>

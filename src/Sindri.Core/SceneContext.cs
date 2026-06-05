@@ -9,8 +9,15 @@ public sealed class SceneContext
 
     public EngineHost Host { get; }
 
+    public EngineServices Services => Host.Services;
+
     public void ChangeScene(IScene nextScene)
     {
         Host.ChangeScene(nextScene);
+    }
+
+    public void RequestExit()
+    {
+        Host.RequestExit();
     }
 }
