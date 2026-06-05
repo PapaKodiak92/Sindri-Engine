@@ -26,7 +26,7 @@ public sealed class TileMapRenderer2D : RenderComponent
         {
             for (var x = 0; x < TileMap.Width; x++)
             {
-                var color = TileMap.GetTile(x, y);
+                var tile = TileMap.GetTile(x, y);
 
                 graphics.FillRectangle(
                     new Rect2D(
@@ -34,7 +34,7 @@ public sealed class TileMapRenderer2D : RenderComponent
                         origin.Y + y * TileMap.TileSize,
                         TileMap.TileSize,
                         TileMap.TileSize),
-                    color);
+                    tile.Color);
             }
         }
     }

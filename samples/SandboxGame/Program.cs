@@ -51,7 +51,7 @@ internal sealed class SandboxScene : Scene2D
         ActiveCamera = cameraEntity.AddComponent(new Camera2D());
         cameraEntity.AddComponent(new KeyboardPan2DComponent(_keyboard, CameraSpeed));
 
-        CreateTileMap();
+        var mapInfo = CreateTileMap();
 
         var player = CreateEntity("Player");
 
@@ -71,6 +71,11 @@ internal sealed class SandboxScene : Scene2D
             CenterHeight = PlayerSize
         });
 
+        player.AddComponent(new TileMapCollision2DComponent(mapInfo.Map, PlayerSize, PlayerSize)
+        {
+            MapWorldPosition = mapInfo.WorldPosition
+        });
+
         player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold)
         {
             ClampToViewport = false
@@ -78,6 +83,7 @@ internal sealed class SandboxScene : Scene2D
 
         Console.WriteLine("Sandbox scene entered.");
         Console.WriteLine("WASD / Arrow Keys move player. IJKL pans camera. Left click teleports. ESC exits.");
+        Console.WriteLine("Gray and red tiles are solid.");
     }
 
     protected override void OnUpdate(SindriTime time)
@@ -93,7 +99,7 @@ internal sealed class SandboxScene : Scene2D
         Console.WriteLine("Sandbox scene exited.");
     }
 
-    private void CreateTileMap()
+    private TileMapInfo CreateTileMap()
     {
         const int tileSize = 64;
         const int width = 30;
@@ -118,29 +124,37 @@ internal sealed class SandboxScene : Scene2D
 
         for (var x = 0; x < width; x++)
         {
-            map.SetTile(x, 0, new ColorRGBA(80, 80, 88));
-            map.SetTile(x, height - 1, new ColorRGBA(80, 80, 88));
+            map.SetTile(x, 0, new ColorRGBA(80, 80, 88), isSolid: true);
+            map.SetTile(x, height - 1, new ColorRGBA(80, 80, 88), isSolid: true);
         }
 
         for (var y = 0; y < height; y++)
         {
-            map.SetTile(0, y, new ColorRGBA(80, 80, 88));
-            map.SetTile(width - 1, y, new ColorRGBA(80, 80, 88));
+            map.SetTile(0, y, new ColorRGBA(80, 80, 88), isSolid: true);
+            map.SetTile(width - 1, y, new ColorRGBA(80, 80, 88), isSolid: true);
         }
 
-        map.SetTile(5, 5, ColorRGBA.SindriRed);
+        map.SetTile(5, 5, ColorRGBA.SindriRed, isSolid: true);
+        map.SetTile(6, 5, ColorRGBA.SindriRed, isSolid: true);
+        map.SetTile(7, 5, ColorRGBA.SindriRed, isSolid: true);
         map.SetTile(8, 8, ColorRGBA.SindriGreen);
         map.SetTile(12, 6, ColorRGBA.White);
+
+        var worldPosition = new Vector2F(
+            -width * tileSize / 2f,
+            -height * tileSize / 2f);
 
         var mapEntity = CreateEntity("Test Tilemap");
 
         mapEntity.AddComponent(new Transform2D
         {
-            Position = new Vector2F(
-                -width * tileSize / 2f,
-                -height * tileSize / 2f)
+            Position = worldPosition
         });
 
         mapEntity.AddComponent(new TileMapRenderer2D(map));
+
+        return new TileMapInfo(map, worldPosition);
     }
+
+    private readonly record struct TileMapInfo(TileMap2D Map, Vector2F WorldPosition);
 }
