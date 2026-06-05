@@ -50,6 +50,14 @@ internal sealed class TargetDummyPrefab : IPrefab<TargetDummyPrefabConfig>
             RenderLayer = 9
         });
 
+        dummy.AddComponent(new HealthBar2DRenderer(health)
+        {
+            Width = dummySize,
+            Height = 6f,
+            Offset = new Vector2F(0f, -12f),
+            RenderLayer = 30
+        });
+
         return dummy;
     }
 }
