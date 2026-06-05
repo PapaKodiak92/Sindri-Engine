@@ -16,7 +16,18 @@ internal static class SandboxLevel2DLoader
 
             if (level is not null)
             {
-                Console.WriteLine($"Loaded level from {path}");
+                var changed = EnsureRequiredDefaults(level);
+
+                if (changed)
+                {
+                    Save(path, level);
+                    Console.WriteLine($"Updated level defaults at {path}");
+                }
+                else
+                {
+                    Console.WriteLine($"Loaded level from {path}");
+                }
+
                 return level;
             }
         }
@@ -40,10 +51,36 @@ internal static class SandboxLevel2DLoader
         File.WriteAllText(path, json);
     }
 
+    private static bool EnsureRequiredDefaults(SandboxLevel2DConfig level)
+    {
+        var changed = false;
+
+        if (level.PlayerSpawn is null)
+        {
+            level.PlayerSpawn = new SandboxSpawn2D
+            {
+                Name = "Player Spawn",
+                X = 0f,
+                Y = 0f
+            };
+
+            changed = true;
+        }
+
+        return changed;
+    }
+
     private static SandboxLevel2DConfig CreateDefaults()
     {
         return new SandboxLevel2DConfig
         {
+            PlayerSpawn = new SandboxSpawn2D
+            {
+                Name = "Player Spawn",
+                X = 0f,
+                Y = 0f
+            },
+
             Pickups =
             {
                 new() { Name = "Pickup A", X = -260f, Y = -140f },
@@ -76,6 +113,8 @@ internal static class SandboxLevel2DLoader
 
 internal sealed class SandboxLevel2DConfig
 {
+    public SandboxSpawn2D? PlayerSpawn { get; set; }
+
     public List<SandboxSpawn2D> Pickups { get; set; } = new();
 
     public List<SandboxSpawn2D> TriggerZones { get; set; } = new();

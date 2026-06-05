@@ -87,7 +87,10 @@ private int _destroyedDummies;
         var mapInfo = CreateTileMap();
         _map = mapInfo.Map;
 
-        var player = CreatePlayer(mapInfo);
+        var level = SandboxLevel2DLoader.LoadOrCreateDefault(LevelPath);
+        var playerSpawn = level.PlayerSpawn ?? new SandboxSpawn2D { Name = "Player Spawn", X = 0f, Y = 0f };
+
+        var player = CreatePlayer(mapInfo, new Vector2F(playerSpawn.X, playerSpawn.Y));
         var playerTransform = player.GetRequiredComponent<Transform2D>();
 
         CreateCamera(playerTransform, mapInfo.WorldBounds);
@@ -95,7 +98,7 @@ private int _destroyedDummies;
         CreateTileHover(mapInfo, _mouse);
         CreateAimReticle(_mouse);
 
-        LoadSandboxLevel();
+        SpawnSandboxLevel(level);
 
         CreateDebugOverlay();
         CreatePauseOverlay();
@@ -169,7 +172,7 @@ private int _destroyedDummies;
         Console.WriteLine("Sandbox scene exited.");
     }
 
-    private Entity CreatePlayer(TileMapInfo mapInfo)
+    private Entity CreatePlayer(TileMapInfo mapInfo, Vector2F startPosition)
     {
         if (_actions is null)
         {
@@ -181,7 +184,7 @@ private int _destroyedDummies;
 
         _playerTransform = player.AddComponent(new Transform2D
         {
-            Position = Vector2F.Zero
+            Position = startPosition
         });
 
         player.AddComponent(new BoxCollider2D(PlayerSize, PlayerSize));
@@ -569,10 +572,8 @@ private int _destroyedDummies;
         _totalEnemies++;
     }
 
-    private void LoadSandboxLevel()
+    private void SpawnSandboxLevel(SandboxLevel2DConfig level)
     {
-        var level = SandboxLevel2DLoader.LoadOrCreateDefault(LevelPath);
-
         foreach (var pickup in level.Pickups)
         {
             AddPickup(pickup.Name, pickup.X, pickup.Y);
