@@ -5,6 +5,7 @@ using Sindri.Core.Scenes;
 using Sindri.Graphics;
 using Sindri.Input;
 using Sindri.Platform.Windows;
+using Sindri.Renderer2D.Components;
 
 return WindowsGameRunner.Run(new SandboxGame());
 
@@ -49,7 +50,7 @@ internal sealed class SandboxScene : Scene, IRenderableScene
         });
 
         player.AddComponent(new KeyboardMove2DComponent(_input, PlayerSpeed));
-        player.AddComponent(new RectangleRenderComponent(PlayerSize, PlayerSize, ColorRGBA.SindriGold));
+        player.AddComponent(new RectangleRenderer2D(PlayerSize, PlayerSize, ColorRGBA.SindriGold));
 
         Console.WriteLine("Sandbox scene entered.");
         Console.WriteLine("WASD / Arrow Keys move. ESC exits.");
@@ -132,42 +133,5 @@ internal sealed class KeyboardMove2DComponent : Component
         {
             transform.Position += move.Normalized() * _speed * time.DeltaSeconds;
         }
-    }
-}
-
-internal sealed class RectangleRenderComponent : RenderComponent
-{
-    private readonly float _width;
-    private readonly float _height;
-    private readonly ColorRGBA _color;
-
-    public RectangleRenderComponent(float width, float height, ColorRGBA color)
-    {
-        _width = width;
-        _height = height;
-        _color = color;
-    }
-
-    public override void Render(IGraphicsDevice graphics)
-    {
-        if (Entity is null)
-        {
-            return;
-        }
-
-        var transform = Entity.GetRequiredComponent<Transform2D>();
-        var viewport = graphics.ViewportSize;
-
-        var position = transform.Position;
-
-        position = new Vector2F(
-            X: Math.Clamp(position.X, 0f, Math.Max(0f, viewport.Width - _width)),
-            Y: Math.Clamp(position.Y, 0f, Math.Max(0f, viewport.Height - _height)));
-
-        transform.Position = position;
-
-        graphics.FillRectangle(
-            new Rect2D(position.X, position.Y, _width, _height),
-            _color);
     }
 }
